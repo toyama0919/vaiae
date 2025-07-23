@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    paths:
+    - 'pyproject.toml'
+    - 'src/**.py'
+    - 'tests/**.py'
+    - 'scripts/**'
+    - '.github/**'
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python }}
+
+    - name: install
+      run: ./scripts/ci.sh install-test
+
+    - name: run-test
+      run: ./scripts/ci.sh run-test

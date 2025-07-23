@@ -1,0 +1,41 @@
+[project]
+name = "vaiae"
+version = "0.1.0"
+description = "Command Line utility for cost of aws."
+authors = [{ name="Hiroshi Toyama", email="toyama0919@gmail.com" }]
+readme = "README.md"
+classifiers = [
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+keywords = [
+  "awscost",
+  "tool",
+  "aws",
+]
+requires-python = ">=3.8"
+dependencies = [
+  "tabulate",
+  "boto3",
+  "click>=7.0",
+  "pyyaml"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[project.optional-dependencies]
+test = [
+  "tox",
+  "pytest",
+  "mock",
+]
+
+[project.scripts]
+vaiae = "vaiae.commands:main"
+
+[project.urls]
+"Homepage" = "https://github.com/toyama0919/vaiae"
