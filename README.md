@@ -32,6 +32,12 @@ Create a `.agent-engine.yml` file to define your agent engine configuration with
 ```yaml
 # Agent Engine Configuration with Profiles
 default:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "dena-ai-sandbox-03-gcp"
+    location: "asia-northeast1"
+    staging_bucket: "dena-ai-sandbox-03-gcp-staging"
+
   display_name: "gcpcost_advisor-0.3.1"
   description: "Analyze the cost of GCP project and provide cost-saving advice.(gemini-2.5-pro)"
   gcs_dir_name: "gcpcost_advisor/0.3.1"
@@ -55,6 +61,12 @@ default:
     - "gcpcost-0.3.1-py3-none-any.whl"
 
 development:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "dev-project"
+    location: "asia-northeast1"
+    staging_bucket: "dev-project-staging"
+
   display_name: "gcpcost_advisor-dev"
   description: "Development version of GCP cost advisor"
   gcs_dir_name: "gcpcost_advisor/dev"
@@ -78,6 +90,12 @@ development:
     - "gcpcost-0.3.1-py3-none-any.whl"
 
 production:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "prod-project"
+    location: "asia-northeast1"
+    staging_bucket: "prod-project-staging"
+
   display_name: "gcpcost_advisor-prod"
   description: "Production version of GCP cost advisor"
   gcs_dir_name: "gcpcost_advisor/prod"
@@ -162,12 +180,15 @@ $ vaiae delete -n "gcpcost_advisor-0.3.1" --dry-run
 ```python
 from src.vaiae.core import Core
 
-# Initialize Core
-core = Core(
-    project="your-gcp-project-id",
-    location="asia-northeast1",
-    staging_bucket="your-staging-bucket"
-)
+# Initialize Core - Vertex AI settings will be loaded from YAML
+core = Core()
+
+# Or you can still provide fallback values
+# core = Core(
+#     project="fallback-project-id",
+#     location="fallback-location",
+#     staging_bucket="fallback-staging-bucket"
+# )
 
 # Example 1: Deploy using default profile
 core.create_or_update_from_yaml(

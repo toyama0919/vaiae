@@ -1,6 +1,6 @@
 from vertexai import agent_engines
 import vertexai
-from gcpcost.logger import get_logger
+from .logger import get_logger
 import pprint
 from .util import Util
 
@@ -8,29 +8,23 @@ from .util import Util
 class Core:
     def __init__(
         self,
-        project: str = None,
-        location: str = None,
-        staging_bucket: str = None,
+        yaml_file_path: str,
+        profile: str = "default",
     ):
-        self.project = project
-        self.location = location
+        self.project = None
+        self.location = None
+        self.staging_bucket = None
         self.logger = get_logger()
+        self.yaml_file_path = yaml_file_path
+        self.profile = profile
+        self.full_config = None
+        self.config = None
+
+        # Initialize from YAML (required)
+        self._initialize_from_yaml(yaml_file_path, profile)
+
         # Initialize Vertex AI if all required parameters are provided
-        if self.project and self.location:
-            self.logger.info("Initializing Vertex AI...")
-            self.logger.info(f"Project: [{self.project}]")
-            self.logger.info(f"Location: [{self.location}]")
-
-            init_kwargs = {
-                "project": self.project,
-                "location": self.location,
-            }
-
-            if staging_bucket:
-                self.logger.info(f"Staging Bucket: [{staging_bucket}]")
-                init_kwargs["staging_bucket"] = f"gs://{staging_bucket}"
-
-            vertexai.init(**init_kwargs)
+        self._initialize_vertex_ai()
 
     def send_message(
         self,
@@ -86,18 +80,59 @@ class Core:
         agent_engine_list = list(agent_engines.list())
         return agent_engine_list
 
+    def delete_agent_engine(
+        self,
+        name: str,
+        force: bool = False,
+        dry_run: bool = False,
+    ) -> None:
+        """Delete the gcpcost_advisor agent engine from Vertex AI.
+
+        Args:
+            name (str): Display name of the agent engine to delete.
+            force (bool, optional): Force deletion even if the agent engine is in use.
+                Defaults to False.
+            dry_run (bool, optional): If True, performs validation without actually
+                deleting the agent engine. Defaults to False.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If agent engine is not found or deletion fails.
+        """
+        self.logger.info("Deleting Gcpcost Advisor Agent...")
+        self.logger.info(f"Display Name: [{name}]")
+        self.logger.info(f"Force: [{force}]")
+
+        try:
+            # Get the agent engine instance by display name
+            agent_engine = self.get_agent_engine(name)
+            if not agent_engine:
+                raise Exception(f"Agent engine with display name '{name}' not found")
+
+            self.logger.info(f"Found agent engine: {agent_engine.resource_name}")
+
+            # Delete the agent engine
+            self.logger.info("Deleting agent engine...")
+            if dry_run:
+                self.logger.info("Dry run mode: not deleting the agent engine.")
+                return
+            agent_engine.delete(force=force)
+            self.logger.info("Agent engine deleted successfully.")
+
+        except Exception as e:
+            self.logger.info(f"Error deleting agent engine: {e}")
+            raise
+
     def create_or_update_from_yaml(
         self,
-        yaml_file_path: str,
-        profile: str = "default",
         dry_run: bool = False,
         **overrides
     ) -> None:
         """Deploy or update an agent engine from YAML configuration.
 
         Args:
-            yaml_file_path (str): Path to the YAML configuration file.
-            profile (str, optional): Profile name to use from YAML config. Defaults to "default".
             dry_run (bool, optional): If True, performs validation without actually
                 deploying or updating. Defaults to False.
             **overrides: Additional parameters to override YAML configuration values.
@@ -105,16 +140,9 @@ class Core:
         Returns:
             None
         """
-        # Load configuration from YAML file
-        full_config = Util.load_yaml_config(yaml_file_path)
-
-        # Extract profile configuration
-        if profile not in full_config:
-            available_profiles = list(full_config.keys())
-            raise ValueError(f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}")
-
-        config = full_config[profile]
-        self.logger.info(f"Using profile: {profile}")
+        # Use cached configuration from initialization
+        config = self.config
+        self.logger.info(f"Using profile: {self.profile}")
 
         # Apply overrides to config
         if overrides:
@@ -133,16 +161,12 @@ class Core:
 
     def delete_agent_engine_from_yaml(
         self,
-        yaml_file_path: str,
-        profile: str = "default",
         force: bool = False,
         dry_run: bool = False,
     ) -> None:
         """Delete an agent engine using YAML configuration.
 
         Args:
-            yaml_file_path (str): Path to the YAML configuration file.
-            profile (str, optional): Profile name to use from YAML config. Defaults to "default".
             force (bool, optional): Force deletion even if the agent engine is in use.
                 Defaults to False.
             dry_run (bool, optional): If True, performs validation without actually
@@ -151,16 +175,9 @@ class Core:
         Returns:
             None
         """
-        # Load configuration from YAML file
-        full_config = Util.load_yaml_config(yaml_file_path)
-
-        # Extract profile configuration
-        if profile not in full_config:
-            available_profiles = list(full_config.keys())
-            raise ValueError(f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}")
-
-        config = full_config[profile]
-        self.logger.info(f"Using profile: {profile}")
+        # Use cached configuration from initialization
+        config = self.config
+        self.logger.info(f"Using profile: {self.profile}")
 
         # Get display_name from config
         config_display_name = config.get('display_name')
@@ -169,6 +186,51 @@ class Core:
 
         # Call existing delete_agent_engine method
         self.delete_agent_engine(config_display_name, force, dry_run)
+
+    def _initialize_from_yaml(self, yaml_file_path: str, profile: str) -> None:
+        """Initialize Vertex AI settings from YAML configuration.
+
+        Args:
+            yaml_file_path (str): Path to the YAML configuration file.
+            profile (str): Profile name to use from YAML config.
+
+        Returns:
+            None
+        """
+        # Load configuration from YAML file with profile validation
+        self.full_config, self.config = Util.load_yaml_config(yaml_file_path, profile)
+
+        vertex_ai_config = self.config.get('vertex_ai', {})
+
+        # Update instance variables with YAML values
+        if vertex_ai_config.get('project'):
+            self.project = vertex_ai_config.get('project')
+        if vertex_ai_config.get('location'):
+            self.location = vertex_ai_config.get('location')
+        if vertex_ai_config.get('staging_bucket'):
+            self.staging_bucket = vertex_ai_config.get('staging_bucket')
+
+    def _initialize_vertex_ai(self) -> None:
+        """Initialize Vertex AI with current instance settings.
+
+        Returns:
+            None
+        """
+        if self.project and self.location:
+            self.logger.info("Initializing Vertex AI...")
+            self.logger.info(f"Project: [{self.project}]")
+            self.logger.info(f"Location: [{self.location}]")
+
+            init_kwargs = {
+                "project": self.project,
+                "location": self.location,
+            }
+
+            if self.staging_bucket:
+                self.logger.info(f"Staging Bucket: [{self.staging_bucket}]")
+                init_kwargs["staging_bucket"] = f"gs://{self.staging_bucket}"
+
+            vertexai.init(**init_kwargs)
 
     def _apply_overrides(self, config: dict, overrides: dict) -> dict:
         """Apply override parameters to configuration.
@@ -212,34 +274,8 @@ class Core:
             # Import agent instance from string path
             agent_instance = Util.import_from_string(agent_instance_path)
         else:
-            # Fallback: create LlmAgent instance if no instance_path is provided
-            from vertexai.generative_models import LlmAgent
-
-            # Resolve tools from string paths if provided
-            tools = []
-            tool_paths = agent_config.get('tools', [])
-            for tool_path in tool_paths:
-                if isinstance(tool_path, str):
-                    try:
-                        tool = Util.import_from_string(tool_path)
-                        tools.append(tool)
-                    except ImportError as e:
-                        self.logger.warning(f"Could not import tool '{tool_path}': {e}")
-                else:
-                    # If it's already an object, use it as-is
-                    tools.append(tool_path)
-
-            agent_instance = LlmAgent(
-                name=agent_config.get('name'),
-                description=agent_config.get('description'),
-                model=agent_config.get('model'),
-                instruction=agent_config.get('instruction', ''),
-                global_instruction=agent_config.get('global_instruction', ''),
-                tools=tools,
-                disallow_transfer_to_parent=agent_config.get('disallow_transfer_to_parent', False),
-                disallow_transfer_to_peers=agent_config.get('disallow_transfer_to_peers', False),
-                include_contents=agent_config.get('include_contents', 'default'),
-            )
+            # Error if instance_path is not provided
+            raise ValueError("instance_path must be provided in agent_engine configuration")
 
         # Build the complete configuration
         agent_engine_config = {

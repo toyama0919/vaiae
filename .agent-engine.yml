@@ -1,5 +1,11 @@
 # Agent Engine Configuration with Profiles
 default:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "dena-ai-sandbox-03-gcp"
+    location: "asia-northeast1"
+    staging_bucket: "dena-ai-sandbox-03-gcp-staging"
+
   display_name: "gcpcost_advisor-0.3.1"
   description: "Analyze the cost of GCP project and provide cost-saving advice.(gemini-2.5-pro)"
   gcs_dir_name: "gcpcost_advisor/0.3.1"
@@ -27,6 +33,12 @@ default:
     - "gcpcost-0.3.1-py3-none-any.whl"
 
 development:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "dev-project"
+    location: "asia-northeast1"
+    staging_bucket: "dev-project-staging"
+
   display_name: "gcpcost_advisor-dev"
   description: "Development version of GCP cost advisor"
   gcs_dir_name: "gcpcost_advisor/dev"
@@ -50,6 +62,12 @@ development:
     - "gcpcost-0.3.1-py3-none-any.whl"
 
 production:
+  # Vertex AI Configuration
+  vertex_ai:
+    project: "prod-project"
+    location: "asia-northeast1"
+    staging_bucket: "prod-project-staging"
+
   display_name: "gcpcost_advisor-prod"
   description: "Production version of GCP cost advisor"
   gcs_dir_name: "gcpcost_advisor/prod"

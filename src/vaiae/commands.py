@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import click
 import os
-from .deployment.base import Base as DeploymentBase
-from .clients.base import Base as Client
+from .core import Core
 
 
 class Mash(object):
@@ -11,25 +10,33 @@ class Mash(object):
 
 @click.group()
 @click.option(
-    "--project-id",
-    "-p",
-    default=os.environ.get("GOOGLE_CLOUD_PROJECT"),
-    type=str,
-    required=True,
-    help="GCP project ID where the agent will be deployed.",
+    "--yaml-file",
+    "-f",
+    default=".agent-engine.yml",
+    help="Path to the YAML configuration file.",
 )
 @click.option(
-    "--location",
-    default=os.environ.get("GOOGLE_CLOUD_LOCATION"),
-    help="GCP region for deployment (e.g., asia-northeast1, us-central1).",
+    "--profile",
+    default="default",
+    help="Profile name to use from YAML config.",
 )
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def cli(ctx, project_id, location, debug):
+def cli(ctx, yaml_file, profile, debug):
     ctx.obj = Mash()
-    ctx.obj.project_id = project_id
-    ctx.obj.location = location
+    ctx.obj.yaml_file = yaml_file
+    ctx.obj.profile = profile
     ctx.obj.debug = debug
+
+    # Initialize Core with YAML configuration
+    try:
+        ctx.obj.core = Core(
+            yaml_file_path=yaml_file,
+            profile=profile,
+        )
+    except Exception as e:
+        click.echo(f"Error initializing Core: {e}", err=True)
+        raise click.Abort()
 
 
 @cli.command()
@@ -53,72 +60,65 @@ def cli(ctx, project_id, location, debug):
 )
 @click.pass_context
 def send(ctx, message, user_id, session_id, display_name):
-    Client(
-        project=ctx.obj.project_id,
-        location=ctx.obj.location,
-    ).run(
-        user_id=user_id,
-        message=message,
-        session_id=session_id,
-        display_name=display_name,
-    )
+    try:
+        ctx.obj.core.send_message(
+            message=message,
+            display_name=display_name,
+            session_id=session_id,
+            user_id=user_id,
+        )
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
 
 
 @cli.command()
 @click.option(
-    "--staging-bucket",
-    default=os.environ.get("GOOGLE_STAGING_BUCKET"),
-    help="GCS bucket name for staging deployment artifacts (without gs:// prefix).",
-)
-@click.option(
-    "--table",
-    default=None,
-    help="BigQuery table to store costs. If not provided, it will use the default table based on the project ID.",
-)
-@click.option(
-    "--slack-webhook-secret",
-    default=None,
-    help="Secret Manager secret name for Slack webhook URL (e.g., slack-webhook).",
-)
-@click.option(
     "--dry-run", is_flag=True, default=False, help="Run the deployment in dry run mode."
 )
 @click.pass_context
-def deploy(ctx, staging_bucket, table, slack_webhook_secret, dry_run):
-    deployment_base = DeploymentBase(
-        project=ctx.obj.project_id,
-        location=ctx.obj.location,
-        staging_bucket=staging_bucket,
-    )
-    deployment_base.deploy_agent_engine(
-        table=table,
-        slack_webhook_secret=slack_webhook_secret,
-        dry_run=dry_run,
-    )
+def deploy(ctx, dry_run):
+    """Deploy or update an agent engine from YAML configuration."""
+    try:
+        # Deploy using cached configuration from initialization
+        ctx.obj.core.create_or_update_from_yaml(
+            dry_run=dry_run,
+        )
+
+        if dry_run:
+            click.echo(f"Dry run completed for profile '{ctx.obj.profile}'")
+        else:
+            click.echo(f"Successfully deployed agent engine using profile '{ctx.obj.profile}'")
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
 
 
 @cli.command()
 @click.pass_context
 def list(ctx):
     """List deployed agent engines from Vertex AI."""
-    agent_engines = Client(
-        project=ctx.obj.project_id,
-        location=ctx.obj.location,
-    ).list_agent_engine()
+    try:
+        agent_engines = ctx.obj.core.list_agent_engine()
 
-    if not agent_engines:
-        click.echo("No agent engines found.")
-        return
+        if not agent_engines:
+            click.echo("No agent engines found.")
+            return
 
-    click.echo(f"Found {len(agent_engines)} agent engine(s):")
-    click.echo()
+        click.echo(f"Found {len(agent_engines)} agent engine(s):")
+        click.echo()
 
-    for agent_engine in agent_engines:
-        click.echo(f"Display Name: {agent_engine.display_name}")
-        click.echo(f"Resource Name: {agent_engine.resource_name}")
-        click.echo(f"Create Time: {getattr(agent_engine, 'create_time', 'N/A')}")
-        click.echo(f"Update Time: {getattr(agent_engine, 'update_time', 'N/A')}")
-        click.echo("-" * 50)
+        for agent_engine in agent_engines:
+            click.echo(f"Display Name: {agent_engine.display_name}")
+            click.echo(f"Resource Name: {agent_engine.resource_name}")
+            click.echo(f"Create Time: {getattr(agent_engine, 'create_time', 'N/A')}")
+            click.echo(f"Update Time: {getattr(agent_engine, 'update_time', 'N/A')}")
+            click.echo("-" * 50)
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
 
 
 @cli.command()
@@ -139,16 +139,32 @@ def list(ctx):
 @click.pass_context
 def delete(ctx, name, force, dry_run):
     """Delete a deployed agent engine from Vertex AI."""
-    args = {
-        "force": force,
-        "dry_run": dry_run,
-    }
-    if name:
-        args["name"] = name
-    Client(
-        project=ctx.obj.project_id,
-        location=ctx.obj.location,
-    ).delete_agent_engine(**args)
+    try:
+        if name:
+            # Delete using display name
+            ctx.obj.core.delete_agent_engine(
+                name=name,
+                force=force,
+                dry_run=dry_run,
+            )
+            if dry_run:
+                click.echo(f"Dry run completed for '{name}' deletion")
+            else:
+                click.echo(f"Successfully deleted agent engine '{name}'")
+        else:
+            # Delete using current profile configuration
+            ctx.obj.core.delete_agent_engine_from_yaml(
+                force=force,
+                dry_run=dry_run,
+            )
+            if dry_run:
+                click.echo(f"Dry run completed for profile '{ctx.obj.profile}' deletion")
+            else:
+                click.echo(f"Successfully deleted agent engine using profile '{ctx.obj.profile}'")
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
 
 
 def main():

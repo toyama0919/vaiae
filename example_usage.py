@@ -7,11 +7,10 @@ from src.vaiae.core import Core
 
 
 def main():
-    # Initialize Core with your GCP project settings
+    # Initialize Core with YAML file and profile (required)
     core = Core(
-        project="your-gcp-project-id",
-        location="asia-northeast1",  # or your preferred location
-        staging_bucket="your-staging-bucket"  # optional
+        yaml_file_path=".agent-engine.yml",
+        profile="default"
     )
 
     # Deploy or update agent engine from YAML configuration
