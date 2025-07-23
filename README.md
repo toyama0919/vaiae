@@ -201,6 +201,14 @@ core.create_or_update_from_yaml(
     }
 )
 
+# Example 5: Delete agent engine using YAML profile
+core.delete_agent_engine_from_yaml(
+    yaml_file_path=".agent-engine.yml",
+    profile="development",
+    force=False,
+    dry_run=False
+)
+
 # Send message to agent
 core.send_message(
     message="GCPのコストを分析してください",

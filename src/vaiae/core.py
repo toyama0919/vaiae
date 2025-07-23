@@ -86,51 +86,6 @@ class Core:
         agent_engine_list = list(agent_engines.list())
         return agent_engine_list
 
-    def delete_agent_engine(
-        self,
-        name: str,
-        force: bool = False,
-        dry_run: bool = False,
-    ) -> None:
-        """Delete the gcpcost_advisor agent engine from Vertex AI.
-
-        Args:
-            name (str): Display name of the agent engine to delete.
-            force (bool, optional): Force deletion even if the agent engine is in use.
-                Defaults to False.
-            dry_run (bool, optional): If True, performs validation without actually
-                deleting the agent engine. Defaults to False.
-
-        Returns:
-            None
-
-        Raises:
-            Exception: If agent engine is not found or deletion fails.
-        """
-        self.logger.info("Deleting Gcpcost Advisor Agent...")
-        self.logger.info(f"Display Name: [{name}]")
-        self.logger.info(f"Force: [{force}]")
-
-        try:
-            # Get the agent engine instance by display name
-            agent_engine = self.get_agent_engine(name)
-            if not agent_engine:
-                raise Exception(f"Agent engine with display name '{name}' not found")
-
-            self.logger.info(f"Found agent engine: {agent_engine.resource_name}")
-
-            # Delete the agent engine
-            self.logger.info("Deleting agent engine...")
-            if dry_run:
-                self.logger.info("Dry run mode: not deleting the agent engine.")
-                return
-            agent_engine.delete(force=force)
-            self.logger.info("Agent engine deleted successfully.")
-
-        except Exception as e:
-            self.logger.info(f"Error deleting agent engine: {e}")
-            raise
-
     def create_or_update_from_yaml(
         self,
         yaml_file_path: str,
@@ -175,6 +130,45 @@ class Core:
 
         # Call existing create_or_update method
         self.create_or_update(agent_engine_config, config_display_name, dry_run)
+
+    def delete_agent_engine_from_yaml(
+        self,
+        yaml_file_path: str,
+        profile: str = "default",
+        force: bool = False,
+        dry_run: bool = False,
+    ) -> None:
+        """Delete an agent engine using YAML configuration.
+
+        Args:
+            yaml_file_path (str): Path to the YAML configuration file.
+            profile (str, optional): Profile name to use from YAML config. Defaults to "default".
+            force (bool, optional): Force deletion even if the agent engine is in use.
+                Defaults to False.
+            dry_run (bool, optional): If True, performs validation without actually
+                deleting the agent engine. Defaults to False.
+
+        Returns:
+            None
+        """
+        # Load configuration from YAML file
+        full_config = Util.load_yaml_config(yaml_file_path)
+
+        # Extract profile configuration
+        if profile not in full_config:
+            available_profiles = list(full_config.keys())
+            raise ValueError(f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}")
+
+        config = full_config[profile]
+        self.logger.info(f"Using profile: {profile}")
+
+        # Get display_name from config
+        config_display_name = config.get('display_name')
+        if not config_display_name:
+            raise ValueError("display_name must be provided in YAML config")
+
+        # Call existing delete_agent_engine method
+        self.delete_agent_engine(config_display_name, force, dry_run)
 
     def _apply_overrides(self, config: dict, overrides: dict) -> dict:
         """Apply override parameters to configuration.
