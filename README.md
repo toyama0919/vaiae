@@ -34,19 +34,19 @@ Create a `.agent-engine.yml` file to define your agent engine configuration with
 default:
   # Vertex AI Configuration
   vertex_ai:
-    project: "dena-ai-sandbox-03-gcp"
+    project: "my-gcp-project"
     location: "asia-northeast1"
-    staging_bucket: "dena-ai-sandbox-03-gcp-staging"
+    staging_bucket: "xxxxxxxxxxxxxxxx"
 
-  display_name: "gcpcost_advisor-0.3.1"
-  description: "Analyze the cost of GCP project and provide cost-saving advice.(gemini-2.5-pro)"
+  display_name: "xxxxxxxxxxxxx"
+  description: "xxxxxx my-agent"
   gcs_dir_name: "gcpcost_advisor/0.3.1"
 
   agent_engine:
-    instance_path: "gcpcost.agent.root_agent"
+    instance_path: "xxxxx.xxxx.xxx.root_agent"
 
   env_vars:
-    GCPCOST_TABLE: "dena-ai-sandbox-03-gcp.dena_ai_sandbox_03_gcp.costs"
+    XXXXXXXXXX: "YYYYYYYYYYYYYYYY"
     SLACK_WEBHOOK_URL:
       secret: "slack-webhook-url"
       version: "latest"
@@ -55,68 +55,23 @@ default:
     - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
     - "google-adk"
     - "slackweb"
-    - "gcpcost-0.3.1-py3-none-any.whl"
+    - "xxxxxxxx-0.0.1-py3-none-any.whl"
 
   extra_packages:
-    - "gcpcost-0.3.1-py3-none-any.whl"
+    - "xxxxxxxx-0.0.1-py3-none-any.whl"
 
 development:
   # Vertex AI Configuration
   vertex_ai:
     project: "dev-project"
-    location: "asia-northeast1"
-    staging_bucket: "dev-project-staging"
-
-  display_name: "gcpcost_advisor-dev"
-  description: "Development version of GCP cost advisor"
-  gcs_dir_name: "gcpcost_advisor/dev"
-
-  agent_engine:
-    instance_path: "gcpcost.agent.root_agent"
-
-  env_vars:
-    GCPCOST_TABLE: "dev-project.dataset.costs"
-    SLACK_WEBHOOK_URL:
-      secret: "dev-slack-webhook-url"
-      version: "latest"
-
-  requirements:
-    - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
-    - "google-adk"
-    - "slackweb"
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-  extra_packages:
-    - "gcpcost-0.3.1-py3-none-any.whl"
+  ...
 
 production:
   # Vertex AI Configuration
   vertex_ai:
     project: "prod-project"
     location: "asia-northeast1"
-    staging_bucket: "prod-project-staging"
-
-  display_name: "gcpcost_advisor-prod"
-  description: "Production version of GCP cost advisor"
-  gcs_dir_name: "gcpcost_advisor/prod"
-
-  agent_engine:
-    instance_path: "gcpcost.agent.root_agent"
-
-  env_vars:
-    GCPCOST_TABLE: "prod-project.dataset.costs"
-    SLACK_WEBHOOK_URL:
-      secret: "prod-slack-webhook-url"
-      version: "latest"
-
-  requirements:
-    - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
-    - "google-adk"
-    - "slackweb"
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-  extra_packages:
-    - "gcpcost-0.3.1-py3-none-any.whl"
+  ...
 ```
 
 ### Agent Instance Configuration
