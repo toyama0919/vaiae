@@ -22,7 +22,7 @@ class Mash(object):
     default="default",
     help="Profile name to use from YAML config.",
 )
-@click.option("--debug/--no-debug", default=False)
+@click.option("--debug", is_flag=True, default=False, help="Enable debug mode for verbose output.")
 @click.pass_context
 def cli(ctx, yaml_file, profile, debug):
     ctx.obj = Mash()
@@ -35,6 +35,7 @@ def cli(ctx, yaml_file, profile, debug):
         ctx.obj.core = Core(
             yaml_file_path=yaml_file,
             profile=profile,
+            debug=debug,
         )
     except Exception as e:
         click.echo(f"Error initializing Core: {e}", err=True)

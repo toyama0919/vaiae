@@ -1,7 +1,8 @@
 from vertexai import agent_engines
 import vertexai
-from .logger import get_logger
 import pprint
+import logging
+from .logger import get_logger
 from .util import Util
 
 
@@ -10,18 +11,19 @@ class Core:
         self,
         yaml_file_path: str = None,
         profile: str = "default",
+        debug: bool = False,
     ):
         self.project = None
         self.location = None
         self.staging_bucket = None
-        self.logger = get_logger()
+        self.logger = get_logger(level=logging.DEBUG if debug else logging.INFO)
         self.profile = profile
         self.config = None
 
         # Find YAML file if not specified
         if yaml_file_path is None:
             yaml_file_path = Util.find_config_file()
-            self.logger.info(f"Using configuration file: {yaml_file_path}")
+            self.logger.debug(f"Using configuration file: {yaml_file_path}")
 
         self.yaml_file_path = yaml_file_path
 
@@ -81,7 +83,7 @@ class Core:
         Returns:
             list: List of all agent engine objects.
         """
-        self.logger.info("Listing all agent engines...")
+        self.logger.debug("Listing all agent engines...")
         agent_engine_list = list(agent_engines.list())
         return agent_engine_list
 
@@ -222,9 +224,9 @@ class Core:
             None
         """
         if self.project and self.location:
-            self.logger.info("Initializing Vertex AI...")
-            self.logger.info(f"Project: [{self.project}]")
-            self.logger.info(f"Location: [{self.location}]")
+            self.logger.debug("Initializing Vertex AI...")
+            self.logger.debug(f"Project: [{self.project}]")
+            self.logger.debug(f"Location: [{self.location}]")
 
             init_kwargs = {
                 "project": self.project,
@@ -232,7 +234,7 @@ class Core:
             }
 
             if self.staging_bucket:
-                self.logger.info(f"Staging Bucket: [{self.staging_bucket}]")
+                self.logger.debug(f"Staging Bucket: [{self.staging_bucket}]")
                 init_kwargs["staging_bucket"] = f"gs://{self.staging_bucket}"
 
             vertexai.init(**init_kwargs)
