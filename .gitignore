@@ -4,6 +4,7 @@
 .tox
 .mypy_cache
 .installed.cfg
+.agent-engine.yml
 develop-eggs
 
 *.egg-info
