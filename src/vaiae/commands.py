@@ -3,7 +3,6 @@ import click
 import os
 from tabulate import tabulate
 from .core import Core
-from .util import Util
 
 
 class Mash(object):

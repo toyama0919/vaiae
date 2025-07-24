@@ -1,5 +1,4 @@
 import yaml
-from tabulate import tabulate
 from typing import Dict, Any
 import os
 import importlib
