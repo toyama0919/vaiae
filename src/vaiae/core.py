@@ -48,11 +48,13 @@ class Core:
             session = self.app.create_session(user_id=user_id)
             session_id = session.get("id")
 
-        events = self.app.stream_query(
-            user_id=user_id,
-            session_id=session_id,
-            message=message,
-        )
+        query_params = {
+            "user_id": user_id,
+            "session_id": session_id,
+            "message": message,
+        }
+        self.logger.debug(f"Sending message with params: {query_params}")
+        events = self.app.stream_query(**query_params)
 
         for event in events:
             self.logger.debug(event)
