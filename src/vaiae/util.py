@@ -11,6 +11,35 @@ class Util:
         pass
 
     @staticmethod
+    def find_config_file(filename: str = ".agent-engine.yml") -> str:
+        """Find configuration file in current directory or home directory.
+
+        Args:
+            filename (str): Configuration filename to search for.
+
+        Returns:
+            str: Path to the found configuration file.
+
+        Raises:
+            FileNotFoundError: If the configuration file is not found in either location.
+        """
+        # Check current directory first
+        current_dir_path = os.path.join(os.getcwd(), filename)
+        if os.path.exists(current_dir_path):
+            return current_dir_path
+
+        # Check home directory
+        home_dir_path = os.path.join(os.path.expanduser("~"), filename)
+        if os.path.exists(home_dir_path):
+            return home_dir_path
+
+        # File not found in either location
+        raise FileNotFoundError(
+            f"Configuration file '{filename}' not found in current directory "
+            f"({os.getcwd()}) or home directory ({os.path.expanduser('~')})"
+        )
+
+    @staticmethod
     def load_yaml_config(file_path: str, profile: str = None) -> Dict[str, Any]:
         """Load configuration from YAML file.
 
@@ -42,7 +71,7 @@ class Util:
                     if profile not in full_config:
                         available_profiles = list(full_config.keys())
                         raise ValueError(f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}")
-                    return full_config, full_config[profile]
+                    return full_config[profile]
 
                 return full_config
             except yaml.YAMLError as e:

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import click
 import os
+from tabulate import tabulate
 from .core import Core
+from .util import Util
 
 
 class Mash(object):
@@ -12,8 +14,8 @@ class Mash(object):
 @click.option(
     "--yaml-file",
     "-f",
-    default=".agent-engine.yml",
-    help="Path to the YAML configuration file.",
+    default=None,
+    help="Path to the YAML configuration file. If not specified, searches for .agent-engine.yml in current directory, then home directory.",
 )
 @click.option(
     "--profile",
@@ -39,8 +41,11 @@ def cli(ctx, yaml_file, profile, debug):
         raise click.Abort()
 
 
-@cli.command()
-@click.option("--message", "-m", help="Message to send to the agent for cost analysis.")
+@cli.command(
+    "send",
+    help="Send a message to the agent engine."
+)
+@click.option("--message", "-m", help="Message to send to the agent engine.")
 @click.option(
     "--user-id",
     "-u",
@@ -72,7 +77,10 @@ def send(ctx, message, user_id, session_id, display_name):
         raise click.Abort()
 
 
-@cli.command()
+@cli.command(
+    "deploy",
+    help="Deploy or update an agent engine from YAML configuration."
+)
 @click.option(
     "--dry-run", is_flag=True, default=False, help="Run the deployment in dry run mode."
 )
@@ -95,7 +103,10 @@ def deploy(ctx, dry_run):
         raise click.Abort()
 
 
-@cli.command()
+@cli.command(
+    "list",
+    help="List deployed agent engines from Vertex AI."
+)
 @click.pass_context
 def list(ctx):
     """List deployed agent engines from Vertex AI."""
@@ -106,22 +117,31 @@ def list(ctx):
             click.echo("No agent engines found.")
             return
 
+        # Prepare data for tabulate
+        table_data = []
+        for agent_engine in agent_engines:
+            table_data.append([
+                agent_engine.display_name,
+                agent_engine.resource_name,
+                getattr(agent_engine, 'create_time', 'N/A'),
+                getattr(agent_engine, 'update_time', 'N/A')
+            ])
+
+        # Display table
+        headers = ["Display Name", "Resource Name", "Create Time", "Update Time"]
         click.echo(f"Found {len(agent_engines)} agent engine(s):")
         click.echo()
-
-        for agent_engine in agent_engines:
-            click.echo(f"Display Name: {agent_engine.display_name}")
-            click.echo(f"Resource Name: {agent_engine.resource_name}")
-            click.echo(f"Create Time: {getattr(agent_engine, 'create_time', 'N/A')}")
-            click.echo(f"Update Time: {getattr(agent_engine, 'update_time', 'N/A')}")
-            click.echo("-" * 50)
+        click.echo(tabulate(table_data, headers=headers, tablefmt="simple"))
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort()
 
 
-@cli.command()
+@cli.command(
+    "delete",
+    help="Delete a deployed agent engine from Vertex AI using its display name or profile configuration."
+)
 @click.option(
     "--name",
     "-n",

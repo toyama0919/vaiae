@@ -8,17 +8,22 @@ from .util import Util
 class Core:
     def __init__(
         self,
-        yaml_file_path: str,
+        yaml_file_path: str = None,
         profile: str = "default",
     ):
         self.project = None
         self.location = None
         self.staging_bucket = None
         self.logger = get_logger()
-        self.yaml_file_path = yaml_file_path
         self.profile = profile
-        self.full_config = None
         self.config = None
+
+        # Find YAML file if not specified
+        if yaml_file_path is None:
+            yaml_file_path = Util.find_config_file()
+            self.logger.info(f"Using configuration file: {yaml_file_path}")
+
+        self.yaml_file_path = yaml_file_path
 
         # Initialize from YAML (required)
         self._initialize_from_yaml(yaml_file_path, profile)
@@ -198,7 +203,7 @@ class Core:
             None
         """
         # Load configuration from YAML file with profile validation
-        self.full_config, self.config = Util.load_yaml_config(yaml_file_path, profile)
+        self.config = Util.load_yaml_config(yaml_file_path, profile)
 
         vertex_ai_config = self.config.get('vertex_ai', {})
 

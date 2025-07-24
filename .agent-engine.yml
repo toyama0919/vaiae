@@ -3,7 +3,7 @@ default:
   # Vertex AI Configuration
   vertex_ai:
     project: "dena-ai-sandbox-03-gcp"
-    location: "asia-northeast1"
+    location: "us-central1"
     staging_bucket: "dena-ai-sandbox-03-gcp-staging"
 
   display_name: "gcpcost_advisor-0.3.1"
@@ -23,64 +23,6 @@ default:
       version: "latest"
 
   # Package requirements
-  requirements:
-    - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
-    - "google-adk"
-    - "slackweb"
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-  extra_packages:
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-development:
-  # Vertex AI Configuration
-  vertex_ai:
-    project: "dev-project"
-    location: "asia-northeast1"
-    staging_bucket: "dev-project-staging"
-
-  display_name: "gcpcost_advisor-dev"
-  description: "Development version of GCP cost advisor"
-  gcs_dir_name: "gcpcost_advisor/dev"
-
-  agent_engine:
-    instance_path: "gcpcost.agent.root_agent"
-
-  env_vars:
-    GCPCOST_TABLE: "dev-project.dataset.costs"
-    SLACK_WEBHOOK_URL:
-      secret: "dev-slack-webhook-url"
-      version: "latest"
-
-  requirements:
-    - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
-    - "google-adk"
-    - "slackweb"
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-  extra_packages:
-    - "gcpcost-0.3.1-py3-none-any.whl"
-
-production:
-  # Vertex AI Configuration
-  vertex_ai:
-    project: "prod-project"
-    location: "asia-northeast1"
-    staging_bucket: "prod-project-staging"
-
-  display_name: "gcpcost_advisor-prod"
-  description: "Production version of GCP cost advisor"
-  gcs_dir_name: "gcpcost_advisor/prod"
-
-  agent_engine:
-    instance_path: "gcpcost.agent.root_agent"
-
-  env_vars:
-    GCPCOST_TABLE: "prod-project.dataset.costs"
-    SLACK_WEBHOOK_URL:
-      secret: "prod-slack-webhook-url"
-      version: "latest"
-
   requirements:
     - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
     - "google-adk"
