@@ -60,7 +60,7 @@ class Util:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             try:
                 config = yaml.safe_load(file)
                 full_config = config if config is not None else {}
@@ -69,7 +69,9 @@ class Util:
                 if profile:
                     if profile not in full_config:
                         available_profiles = list(full_config.keys())
-                        raise ValueError(f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}")
+                        raise ValueError(
+                            f"Profile '{profile}' not found in YAML config. Available profiles: {available_profiles}"
+                        )
                     return full_config[profile]
 
                 return full_config
@@ -92,7 +94,7 @@ class Util:
         """
         try:
             # Split the path into module and object name
-            module_path, object_name = import_path.rsplit('.', 1)
+            module_path, object_name = import_path.rsplit(".", 1)
 
             # Import the module
             module = importlib.import_module(module_path)

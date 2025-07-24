@@ -134,11 +134,7 @@ class Core:
             self.logger.info(f"Error deleting agent engine: {e}")
             raise
 
-    def create_or_update_from_yaml(
-        self,
-        dry_run: bool = False,
-        **overrides
-    ) -> None:
+    def create_or_update_from_yaml(self, dry_run: bool = False, **overrides) -> None:
         """Deploy or update an agent engine from YAML configuration.
 
         Args:
@@ -161,7 +157,7 @@ class Core:
         agent_engine_config = self._build_agent_engine_config(config)
 
         # Get display_name from config
-        config_display_name = config.get('display_name')
+        config_display_name = config.get("display_name")
         if not config_display_name:
             raise ValueError("display_name must be provided in YAML config")
 
@@ -189,7 +185,7 @@ class Core:
         self.logger.info(f"Using profile: {self.profile}")
 
         # Get display_name from config
-        config_display_name = config.get('display_name')
+        config_display_name = config.get("display_name")
         if not config_display_name:
             raise ValueError("display_name must be provided in YAML config")
 
@@ -209,15 +205,15 @@ class Core:
         # Load configuration from YAML file with profile validation
         self.config = Util.load_yaml_config(yaml_file_path, profile)
 
-        vertex_ai_config = self.config.get('vertex_ai', {})
+        vertex_ai_config = self.config.get("vertex_ai", {})
 
         # Update instance variables with YAML values
-        if vertex_ai_config.get('project'):
-            self.project = vertex_ai_config.get('project')
-        if vertex_ai_config.get('location'):
-            self.location = vertex_ai_config.get('location')
-        if vertex_ai_config.get('staging_bucket'):
-            self.staging_bucket = vertex_ai_config.get('staging_bucket')
+        if vertex_ai_config.get("project"):
+            self.project = vertex_ai_config.get("project")
+        if vertex_ai_config.get("location"):
+            self.location = vertex_ai_config.get("location")
+        if vertex_ai_config.get("staging_bucket"):
+            self.staging_bucket = vertex_ai_config.get("staging_bucket")
 
     def _initialize_vertex_ai(self) -> None:
         """Initialize Vertex AI with current instance settings.
@@ -252,12 +248,17 @@ class Core:
             dict: Updated configuration with overrides applied.
         """
         import copy
+
         updated_config = copy.deepcopy(config)
 
         # Apply overrides recursively
         def deep_update(base_dict, update_dict):
             for key, value in update_dict.items():
-                if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
+                if (
+                    isinstance(value, dict)
+                    and key in base_dict
+                    and isinstance(base_dict[key], dict)
+                ):
                     deep_update(base_dict[key], value)
                 else:
                     base_dict[key] = value
@@ -275,26 +276,28 @@ class Core:
             dict: Agent engine configuration ready for create/update.
         """
         # Extract agent engine configuration
-        agent_config = config.get('agent_engine', {})
+        agent_config = config.get("agent_engine", {})
 
         # Get agent instance from string path
-        agent_instance_path = agent_config.get('instance_path')
+        agent_instance_path = agent_config.get("instance_path")
         if agent_instance_path:
             # Import agent instance from string path
             agent_instance = Util.import_from_string(agent_instance_path)
         else:
             # Error if instance_path is not provided
-            raise ValueError("instance_path must be provided in agent_engine configuration")
+            raise ValueError(
+                "instance_path must be provided in agent_engine configuration"
+            )
 
         # Build the complete configuration
         agent_engine_config = {
-            'agent_engine': agent_instance,
-            'description': config.get('description'),
-            'display_name': config.get('display_name'),
-            'env_vars': config.get('env_vars', {}),
-            'extra_packages': config.get('extra_packages', []),
-            'gcs_dir_name': config.get('gcs_dir_name'),
-            'requirements': config.get('requirements', []),
+            "agent_engine": agent_instance,
+            "description": config.get("description"),
+            "display_name": config.get("display_name"),
+            "env_vars": config.get("env_vars", {}),
+            "extra_packages": config.get("extra_packages", []),
+            "gcs_dir_name": config.get("gcs_dir_name"),
+            "requirements": config.get("requirements", []),
         }
 
         return agent_engine_config

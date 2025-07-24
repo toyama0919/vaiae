@@ -21,7 +21,9 @@ class Mash(object):
     default="default",
     help="Profile name to use from YAML config.",
 )
-@click.option("--debug", is_flag=True, default=False, help="Enable debug mode for verbose output.")
+@click.option(
+    "--debug", is_flag=True, default=False, help="Enable debug mode for verbose output."
+)
 @click.pass_context
 def cli(ctx, yaml_file, profile, debug):
     ctx.obj = Mash()
@@ -41,10 +43,7 @@ def cli(ctx, yaml_file, profile, debug):
         raise click.Abort()
 
 
-@cli.command(
-    "send",
-    help="Send a message to the agent engine."
-)
+@cli.command("send", help="Send a message to the agent engine.")
 @click.option("--message", "-m", help="Message to send to the agent engine.")
 @click.option(
     "--user-id",
@@ -77,10 +76,7 @@ def send(ctx, message, user_id, session_id, display_name):
         raise click.Abort()
 
 
-@cli.command(
-    "deploy",
-    help="Deploy or update an agent engine from YAML configuration."
-)
+@cli.command("deploy", help="Deploy or update an agent engine from YAML configuration.")
 @click.option(
     "--dry-run", is_flag=True, default=False, help="Run the deployment in dry run mode."
 )
@@ -96,17 +92,16 @@ def deploy(ctx, dry_run):
         if dry_run:
             click.echo(f"Dry run completed for profile '{ctx.obj.profile}'")
         else:
-            click.echo(f"Successfully deployed agent engine using profile '{ctx.obj.profile}'")
+            click.echo(
+                f"Successfully deployed agent engine using profile '{ctx.obj.profile}'"
+            )
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort()
 
 
-@cli.command(
-    "list",
-    help="List deployed agent engines from Vertex AI."
-)
+@cli.command("list", help="List deployed agent engines from Vertex AI.")
 @click.pass_context
 def list(ctx):
     """List deployed agent engines from Vertex AI."""
@@ -120,12 +115,14 @@ def list(ctx):
         # Prepare data for tabulate
         table_data = []
         for agent_engine in agent_engines:
-            table_data.append([
-                agent_engine.display_name,
-                agent_engine.resource_name,
-                getattr(agent_engine, 'create_time', 'N/A'),
-                getattr(agent_engine, 'update_time', 'N/A')
-            ])
+            table_data.append(
+                [
+                    agent_engine.display_name,
+                    agent_engine.resource_name,
+                    getattr(agent_engine, "create_time", "N/A"),
+                    getattr(agent_engine, "update_time", "N/A"),
+                ]
+            )
 
         # Display table
         headers = ["Display Name", "Resource Name", "Create Time", "Update Time"]
@@ -140,7 +137,7 @@ def list(ctx):
 
 @cli.command(
     "delete",
-    help="Delete a deployed agent engine from Vertex AI using its display name or profile configuration."
+    help="Delete a deployed agent engine from Vertex AI using its display name or profile configuration.",
 )
 @click.option(
     "--name",
@@ -178,9 +175,13 @@ def delete(ctx, name, force, dry_run):
                 dry_run=dry_run,
             )
             if dry_run:
-                click.echo(f"Dry run completed for profile '{ctx.obj.profile}' deletion")
+                click.echo(
+                    f"Dry run completed for profile '{ctx.obj.profile}' deletion"
+                )
             else:
-                click.echo(f"Successfully deleted agent engine using profile '{ctx.obj.profile}'")
+                click.echo(
+                    f"Successfully deleted agent engine using profile '{ctx.obj.profile}'"
+                )
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)

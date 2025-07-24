@@ -16,8 +16,9 @@ def get_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging
     if name is None:
         # Get the calling module's name
         import inspect
+
         frame = inspect.currentframe().f_back
-        name = frame.f_globals.get('__name__', 'vaiae')
+        name = frame.f_globals.get("__name__", "vaiae")
 
     logger = logging.getLogger(name)
 
@@ -29,8 +30,8 @@ def get_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging
 
         # Create formatter
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         handler.setFormatter(formatter)
 
@@ -51,7 +52,7 @@ def set_log_level(level: int) -> None:
         level (int): Logging level (e.g., logging.DEBUG, logging.INFO, etc.)
     """
     # Get the root vaiae logger
-    vaiae_logger = logging.getLogger('vaiae')
+    vaiae_logger = logging.getLogger("vaiae")
     vaiae_logger.setLevel(level)
 
     # Update all handlers
