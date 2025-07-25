@@ -1,5 +1,6 @@
-from vertexai import agent_engines
 import vertexai
+from vertexai.preview import reasoning_engines
+from vertexai import agent_engines
 import pprint
 import logging
 from .logger import get_logger
@@ -36,17 +37,30 @@ class Core:
     def send_message(
         self,
         message: str,
-        display_name: str,
         session_id: str = None,
         user_id: str = None,
+        local: bool = False,
     ):
-        self.app = self.get_agent_engine(
-            display_name=display_name,
-        )
+        if local:
+            # For local mode, get agent instance from current config
+            agent_config = self.config.get("agent_engine", {})
+            agent_instance = self._get_agent_instance_from_config(agent_config)
+            self.app = reasoning_engines.AdkApp(
+                agent=agent_instance,
+                enable_tracing=True,
+            )
+        else:
+            display_name = self.config.get("display_name")
+            self.app = self.get_agent_engine(
+                display_name=display_name,
+            )
 
         if session_id is None:
             session = self.app.create_session(user_id=user_id)
-            session_id = session.get("id")
+            if isinstance(session, dict):
+                session_id = session.get("id")
+            else:
+                session_id = session.id
 
         query_params = {
             "user_id": user_id,
@@ -266,6 +280,28 @@ class Core:
         deep_update(updated_config, overrides)
         return updated_config
 
+    def _get_agent_instance_from_config(self, agent_config: dict):
+        """Get agent instance from agent configuration.
+
+        Args:
+            agent_config (dict): Agent engine configuration dictionary.
+
+        Returns:
+            object: Agent instance imported from the specified path.
+
+        Raises:
+            ValueError: If instance_path is not provided in configuration.
+        """
+        agent_instance_path = agent_config.get("instance_path")
+        if agent_instance_path:
+            # Import agent instance from string path
+            return Util.import_from_string(agent_instance_path)
+        else:
+            # Error if instance_path is not provided
+            raise ValueError(
+                "instance_path must be provided in agent_engine configuration"
+            )
+
     def _build_agent_engine_config(self, config: dict) -> dict:
         """Build agent engine configuration from YAML config.
 
@@ -278,16 +314,8 @@ class Core:
         # Extract agent engine configuration
         agent_config = config.get("agent_engine", {})
 
-        # Get agent instance from string path
-        agent_instance_path = agent_config.get("instance_path")
-        if agent_instance_path:
-            # Import agent instance from string path
-            agent_instance = Util.import_from_string(agent_instance_path)
-        else:
-            # Error if instance_path is not provided
-            raise ValueError(
-                "instance_path must be provided in agent_engine configuration"
-            )
+        # Get agent instance using the reusable method
+        agent_instance = self._get_agent_instance_from_config(agent_config)
 
         # Build the complete configuration
         agent_engine_config = {

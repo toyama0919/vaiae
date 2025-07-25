@@ -58,18 +58,19 @@ def cli(ctx, yaml_file, profile, debug):
     help="Session ID to continue an existing conversation.",
 )
 @click.option(
-    "--display-name",
-    "-d",
-    help="Display name for the agent engine (defaults to AGENT_DISPLAY_NAME env var).",
+    "--local",
+    is_flag=True,
+    default=False,
+    help="Run in local mode without deploying to Vertex AI.",
 )
 @click.pass_context
-def send(ctx, message, user_id, session_id, display_name):
+def send(ctx, message, user_id, session_id, local):
     try:
         ctx.obj.core.send_message(
             message=message,
-            display_name=display_name,
             session_id=session_id,
             user_id=user_id,
+            local=local,
         )
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
