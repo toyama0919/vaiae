@@ -42,16 +42,6 @@ pip install -e .
 
 ## ⚙️ 初期設定
 
-### 環境変数の設定
-
-以下の環境変数を設定してください：
-
-```bash
-export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
-export GOOGLE_CLOUD_LOCATION=asia-northeast1
-export GOOGLE_STAGING_BUCKET=your-staging-bucket  # オプション
-```
-
 ### 認証の設定
 
 Google Cloud認証を設定します：
@@ -284,17 +274,6 @@ gcloud auth application-default login
 # または
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 ```
-
-#### プロジェクトが見つからない
-
-```
-Error: Project not found
-```
-
-**解決方法:**
-- `GOOGLE_CLOUD_PROJECT` 環境変数が正しく設定されているか確認
-- プロジェクトIDが正確であることを確認
-- プロジェクトでVertex AI APIが有効化されているか確認
 
 #### 権限不足エラー
 
