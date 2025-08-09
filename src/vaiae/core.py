@@ -1,3 +1,6 @@
+import io
+import sys
+
 import vertexai
 from vertexai.preview import reasoning_engines
 from vertexai import agent_engines
@@ -55,6 +58,8 @@ class Core:
                 display_name=display_name,
             )
 
+        # suppress output to stderr
+        sys.stderr = io.StringIO()
         if session_id is None:
             session = self.app.create_session(user_id=user_id)
             if isinstance(session, dict):
