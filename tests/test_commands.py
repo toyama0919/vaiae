@@ -209,8 +209,6 @@ class TestCommands:
                     "send",
                     "-m",
                     "Hello, agent!",
-                    "-d",
-                    "test-agent",
                     "-u",
                     "test-user",
                     "-s",
@@ -221,9 +219,9 @@ class TestCommands:
             assert result.exit_code == 0
             mock_core_instance.send_message.assert_called_once_with(
                 message="Hello, agent!",
-                display_name="test-agent",
                 session_id="session-123",
                 user_id="test-user",
+                local=False,
             )
 
     @patch("vaiae.commands.Core")
@@ -244,13 +242,40 @@ class TestCommands:
                     "send",
                     "-m",
                     "Hello, agent!",
-                    "-d",
-                    "test-agent",
                 ],
             )
 
             assert result.exit_code == 1
             assert "Error: Send error" in result.output
+
+    @patch("vaiae.commands.Core")
+    def test_send_command_local_mode(self, mock_core_class):
+        """sendコマンドのローカルモードテスト"""
+        mock_core_instance = MagicMock()
+        mock_core_class.return_value = mock_core_instance
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_file = self.create_test_yaml_config(temp_dir)
+
+            result = self.runner.invoke(
+                commands.cli,
+                [
+                    "--yaml-file",
+                    config_file,
+                    "send",
+                    "-m",
+                    "Hello, agent!",
+                    "--local",
+                ],
+            )
+
+            assert result.exit_code == 0
+            mock_core_instance.send_message.assert_called_once_with(
+                message="Hello, agent!",
+                session_id=None,
+                user_id=os.environ.get("USER"),
+                local=True,
+            )
 
     @patch("vaiae.commands.Core")
     def test_delete_command_by_name_dry_run(self, mock_core_class):
