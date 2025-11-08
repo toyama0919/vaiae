@@ -8,48 +8,48 @@ from vaiae.util import Util
 
 class TestUtil:
     def setup_method(self, method):
-        """各テストメソッドの前に実行される"""
+        """Executed before each test method"""
         pass
 
     def teardown_method(self, method):
-        """各テストメソッドの後に実行される"""
+        """Executed after each test method"""
         pass
 
     def test_convert(self):
-        """convert メソッドのテスト（現在は何もしない）"""
-        # convertメソッドは現在何もしないので、例外が発生しないことを確認
+        """Test convert method (currently does nothing)"""
+        # Verify that convert method doesn't raise exceptions
         result = Util.convert()
         assert result is None
 
     def test_find_config_file_current_directory(self):
-        """現在のディレクトリで設定ファイルを見つけるテスト"""
+        """Test finding config file in current directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            # 一時ファイルを作成
+            # Create temporary file
             config_file = os.path.join(temp_dir, ".agent-engine.yml")
             with open(config_file, "w") as f:
                 f.write("test: config")
 
-            # 現在のディレクトリを一時ディレクトリに変更
+            # Change current directory to temporary directory
             with patch("os.getcwd", return_value=temp_dir):
                 result = Util.find_config_file()
                 assert result == config_file
 
     def test_find_config_file_home_directory(self):
-        """ホームディレクトリで設定ファイルを見つけるテスト"""
+        """Test finding config file in home directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            # ホームディレクトリに設定ファイルを作成
+            # Create config file in home directory
             config_file = os.path.join(temp_dir, ".agent-engine.yml")
             with open(config_file, "w") as f:
                 f.write("test: config")
 
-            # 現在のディレクトリには存在せず、ホームディレクトリに存在する場合
+            # Test case when file doesn't exist in current directory but exists in home directory
             with patch("os.getcwd", return_value="/nonexistent"):
                 with patch("os.path.expanduser", return_value=temp_dir):
                     result = Util.find_config_file()
                     assert result == config_file
 
     def test_find_config_file_not_found(self):
-        """設定ファイルが見つからない場合のテスト"""
+        """Test when config file is not found"""
         with patch("os.getcwd", return_value="/nonexistent"):
             with patch("os.path.expanduser", return_value="/nonexistent"):
                 with pytest.raises(FileNotFoundError) as exc_info:
@@ -59,9 +59,9 @@ class TestUtil:
                 )
 
     def test_find_config_file_custom_filename(self):
-        """カスタムファイル名での設定ファイル検索テスト"""
+        """Test finding config file with custom filename"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            # カスタムファイル名で設定ファイルを作成
+            # Create config file with custom filename
             custom_filename = "custom-config.yml"
             config_file = os.path.join(temp_dir, custom_filename)
             with open(config_file, "w") as f:
@@ -72,7 +72,7 @@ class TestUtil:
                 assert result == config_file
 
     def test_load_yaml_config_success(self):
-        """YAML設定ファイルの正常読み込みテスト"""
+        """Test successful YAML config file loading"""
         test_config = {
             "default": {"display_name": "test-agent", "description": "Test agent"},
             "production": {
@@ -86,11 +86,11 @@ class TestUtil:
             temp_file = f.name
 
         try:
-            # プロファイル指定なしでの読み込み
+            # Load without profile specification
             result = Util.load_yaml_config(temp_file)
             assert result == test_config
 
-            # プロファイル指定ありでの読み込み
+            # Load with profile specification
             result_default = Util.load_yaml_config(temp_file, "default")
             assert result_default == test_config["default"]
 
@@ -100,13 +100,13 @@ class TestUtil:
             os.unlink(temp_file)
 
     def test_load_yaml_config_file_not_found(self):
-        """存在しないYAMLファイルの読み込みテスト"""
+        """Test loading non-existent YAML file"""
         with pytest.raises(FileNotFoundError) as exc_info:
             Util.load_yaml_config("/nonexistent/config.yml")
         assert "Configuration file not found" in str(exc_info.value)
 
     def test_load_yaml_config_invalid_yaml(self):
-        """不正なYAMLファイルの読み込みテスト"""
+        """Test loading invalid YAML file"""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write("invalid: yaml: content: [")
             temp_file = f.name
@@ -119,7 +119,7 @@ class TestUtil:
             os.unlink(temp_file)
 
     def test_load_yaml_config_profile_not_found(self):
-        """存在しないプロファイルの指定テスト"""
+        """Test specifying non-existent profile"""
         test_config = {"default": {"display_name": "test-agent"}}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
@@ -135,7 +135,7 @@ class TestUtil:
             os.unlink(temp_file)
 
     def test_load_yaml_config_empty_file(self):
-        """空のYAMLファイルの読み込みテスト"""
+        """Test loading empty YAML file"""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write("")
             temp_file = f.name
@@ -147,29 +147,29 @@ class TestUtil:
             os.unlink(temp_file)
 
     def test_import_from_string_success(self):
-        """文字列からのインポート成功テスト"""
-        # 標準ライブラリのモジュールをテスト
+        """Test successful import from string"""
+        # Test importing standard library module
         result = Util.import_from_string("os.path.join")
         assert result == os.path.join
 
-        # クラスのインポートテスト
+        # Test class import
         result = Util.import_from_string("tempfile.NamedTemporaryFile")
         assert result == tempfile.NamedTemporaryFile
 
     def test_import_from_string_module_not_found(self):
-        """存在しないモジュールのインポートテスト"""
+        """Test importing non-existent module"""
         with pytest.raises(ImportError) as exc_info:
             Util.import_from_string("nonexistent.module.function")
         assert "Cannot import 'nonexistent.module.function'" in str(exc_info.value)
 
     def test_import_from_string_attribute_not_found(self):
-        """存在しない属性のインポートテスト"""
+        """Test importing non-existent attribute"""
         with pytest.raises(ImportError) as exc_info:
             Util.import_from_string("os.nonexistent_function")
         assert "Cannot import 'os.nonexistent_function'" in str(exc_info.value)
 
     def test_import_from_string_invalid_path(self):
-        """不正なインポートパスのテスト"""
+        """Test invalid import path"""
         with pytest.raises(ImportError) as exc_info:
             Util.import_from_string("invalid_path_without_dots")
         assert "Cannot import 'invalid_path_without_dots'" in str(exc_info.value)

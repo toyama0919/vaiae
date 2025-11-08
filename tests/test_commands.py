@@ -8,15 +8,15 @@ from vaiae import commands
 
 class TestCommands:
     def setup_method(self, method):
-        """各テストメソッドの前に実行される"""
+        """Executed before each test method"""
         self.runner = CliRunner()
 
     def teardown_method(self, method):
-        """各テストメソッドの後に実行される"""
+        """Executed after each test method"""
         pass
 
     def create_test_yaml_config(self, temp_dir):
-        """テスト用のYAML設定ファイルを作成"""
+        """Create a YAML configuration file for testing"""
         config = {
             "default": {
                 "vertex_ai": {
@@ -41,18 +41,18 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_cli_initialization_success(self, mock_core_class):
-        """CLIの正常な初期化テスト"""
+        """Test successful CLI initialization"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
-        # --helpオプションでCLIが正常に動作することを確認
+        # Verify that CLI works correctly with --help option
         result = self.runner.invoke(commands.cli, ["--help"])
         assert result.exit_code == 0
         assert "Usage:" in result.output
 
     @patch("vaiae.commands.Core")
     def test_cli_initialization_error(self, mock_core_class):
-        """CLI初期化エラーのテスト"""
+        """Test CLI initialization error"""
         mock_core_class.side_effect = Exception("Initialization error")
 
         result = self.runner.invoke(
@@ -63,7 +63,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_deploy_command_dry_run(self, mock_core_class):
-        """deployコマンドのドライランテスト"""
+        """Test deploy command dry run"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -90,7 +90,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_deploy_command_success(self, mock_core_class):
-        """deployコマンドの成功テスト"""
+        """Test successful deploy command"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -113,7 +113,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_deploy_command_error(self, mock_core_class):
-        """deployコマンドのエラーテスト"""
+        """Test deploy command error"""
         mock_core_instance = MagicMock()
         mock_core_instance.create_or_update_from_yaml.side_effect = Exception(
             "Deploy error"
@@ -132,10 +132,10 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_list_command_success(self, mock_core_class):
-        """listコマンドの成功テスト"""
+        """Test successful list command"""
         mock_core_instance = MagicMock()
 
-        # モックエージェントエンジンオブジェクトを作成
+        # Create mock agent engine object
         mock_agent_engine = MagicMock()
         mock_agent_engine.display_name = "test-agent"
         mock_agent_engine.resource_name = (
@@ -160,7 +160,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_list_command_no_engines(self, mock_core_class):
-        """listコマンドでエージェントエンジンが見つからない場合のテスト"""
+        """Test list command when no agent engines are found"""
         mock_core_instance = MagicMock()
         mock_core_instance.list_agent_engine.return_value = []
         mock_core_class.return_value = mock_core_instance
@@ -177,7 +177,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_list_command_error(self, mock_core_class):
-        """listコマンドのエラーテスト"""
+        """Test list command error"""
         mock_core_instance = MagicMock()
         mock_core_instance.list_agent_engine.side_effect = Exception("List error")
         mock_core_class.return_value = mock_core_instance
@@ -194,7 +194,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_send_command_success(self, mock_core_class):
-        """sendコマンドの成功テスト"""
+        """Test successful send command"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -226,7 +226,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_send_command_error(self, mock_core_class):
-        """sendコマンドのエラーテスト"""
+        """Test send command error"""
         mock_core_instance = MagicMock()
         mock_core_instance.send_message.side_effect = Exception("Send error")
         mock_core_class.return_value = mock_core_instance
@@ -250,7 +250,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_send_command_local_mode(self, mock_core_class):
-        """sendコマンドのローカルモードテスト"""
+        """Test send command local mode"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -279,7 +279,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_delete_command_by_name_dry_run(self, mock_core_class):
-        """deleteコマンドの名前指定ドライランテスト"""
+        """Test delete command dry run with name"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -299,7 +299,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_delete_command_by_profile(self, mock_core_class):
-        """deleteコマンドのプロファイル指定テスト"""
+        """Test delete command with profile"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -329,7 +329,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_delete_command_error(self, mock_core_class):
-        """deleteコマンドのエラーテスト"""
+        """Test delete command error"""
         mock_core_instance = MagicMock()
         mock_core_instance.delete_agent_engine.side_effect = Exception("Delete error")
         mock_core_class.return_value = mock_core_instance
@@ -346,7 +346,7 @@ class TestCommands:
 
     @patch("vaiae.commands.Core")
     def test_cli_with_debug_flag(self, mock_core_class):
-        """デバッグフラグ付きCLIテスト"""
+        """Test CLI with debug flag"""
         mock_core_instance = MagicMock()
         mock_core_class.return_value = mock_core_instance
 
@@ -359,14 +359,14 @@ class TestCommands:
             )
 
             assert result.exit_code == 0
-            # Coreが正しい引数で初期化されることを確認
+            # Verify that Core is initialized with correct arguments
             mock_core_class.assert_called_once_with(
                 yaml_file_path=config_file, profile="default", debug=True
             )
 
     def test_main_function(self):
-        """main関数のテスト"""
-        # main関数が例外を発生させずに呼び出せることを確認
+        """Test main function"""
+        # Verify that main function can be called without raising exceptions
         with patch("vaiae.commands.cli") as mock_cli:
             commands.main()
             mock_cli.assert_called_once_with(obj={})

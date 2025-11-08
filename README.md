@@ -5,34 +5,34 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/vaiae.svg)](https://pypi.org/project/vaiae/)
 [![License](https://img.shields.io/github/license/toyama0919/vaiae.svg)](https://github.com/toyama0919/vaiae/blob/main/LICENSE)
 
-**Vertex AI Agent Engine**のデプロイと管理を行うためのコマンドラインツールです。
+A command-line tool for deploying and managing **Vertex AI Agent Engine**.
 
-YAMLベースの設定ファイルを使用して、エージェントエンジンの作成、更新、削除、およびメッセージ送信を簡単に行うことができます。
+Easily create, update, delete, and send messages to agent engines using YAML-based configuration files.
 
-## 🚀 特徴
+## 🚀 Features
 
-- **簡単なデプロイ**: YAMLファイルでエージェントエンジンを定義し、ワンコマンドでデプロイ
-- **プロファイル管理**: 開発、本番環境など複数の環境設定を一つのファイルで管理
-- **インタラクティブメッセージング**: デプロイしたエージェントとの対話機能
-- **包括的な管理**: エージェントエンジンの作成、更新、削除、一覧表示
-- **Python API**: コマンドライン以外にもPython APIとしても利用可能
-- **ドライラン対応**: 実際の操作前に設定内容を確認可能
+- **Easy Deployment**: Define agent engines in YAML files and deploy with a single command
+- **Profile Management**: Manage multiple environment configurations (dev, prod, etc.) in one file
+- **Interactive Messaging**: Chat with your deployed agents
+- **Comprehensive Management**: Create, update, delete, and list agent engines
+- **Python API**: Use as a Python library in addition to the CLI
+- **Dry Run Support**: Preview operations before executing them
 
-## 📋 要件
+## 📋 Requirements
 
-- Python 3.10以上
-- Google Cloud Platform アカウント
-- Vertex AI API の有効化
+- Python 3.10 or higher
+- Google Cloud Platform account
+- Vertex AI API enabled
 
-## 🔧 インストール
+## 🔧 Installation
 
-### PyPIからのインストール
+### Install from PyPI
 
 ```bash
 pip install vaiae
 ```
 
-### 開発版のインストール
+### Install Development Version
 
 ```bash
 git clone https://github.com/toyama0919/vaiae.git
@@ -40,30 +40,30 @@ cd vaiae
 pip install -e .
 ```
 
-## ⚙️ 初期設定
+## ⚙️ Initial Setup
 
-### 認証の設定
+### Authentication Setup
 
-Google Cloud認証を設定します：
+Configure Google Cloud authentication:
 
 ```bash
-# Application Default Credentials を使用する場合
+# Using Application Default Credentials
 gcloud auth application-default login
 
-# サービスアカウントキーを使用する場合
+# Using service account key
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 ```
 
-## 📝 設定ファイル
+## 📝 Configuration File
 
-プロジェクトルートに `.agent-engine.yml` ファイルを作成し、エージェントエンジンの設定を定義します。
+Create a `.agent-engine.yml` file in your project root to define agent engine configurations.
 
-### 基本的な設定例
+### Basic Configuration Example
 
 ```yaml
-# 基本プロファイル
+# Default profile
 default:
-  # Vertex AI 設定
+  # Vertex AI settings
   vertex_ai:
     project: "my-gcp-project"
     location: "asia-northeast1"
@@ -73,163 +73,163 @@ default:
   description: "My custom agent engine"
   gcs_dir_name: "my-agent/1.0.0"
 
-  # エージェント設定
+  # Agent configuration
   agent_engine:
     instance_path: "my_package.agents.main_agent"
 
-  # 環境変数
+  # Environment variables
   env_vars:
     API_KEY: "your-api-key"
     SLACK_WEBHOOK_URL:
       secret: "slack-webhook-url"
       version: "latest"
 
-  # 依存関係
+  # Dependencies
   requirements:
     - "google-cloud-aiplatform[adk,agent_engines]==1.96.0"
     - "google-adk"
     - "requests"
 
-  # 追加パッケージ
+  # Extra packages
   extra_packages:
     - "my-custom-package-1.0.0-py3-none-any.whl"
 
-# 開発環境
+# Development environment
 development:
   vertex_ai:
     project: "dev-project"
     location: "asia-northeast1"
   display_name: "my-agent-dev"
   description: "Development environment agent"
-  # 他の設定は default から継承
+  # Other settings inherit from default
 
-# 本番環境
+# Production environment
 production:
   vertex_ai:
     project: "prod-project"
     location: "asia-northeast1"
   display_name: "my-agent-prod"
   description: "Production environment agent"
-  # 他の設定は default から継承
+  # Other settings inherit from default
 ```
 
-### エージェント設定の方法
+### Agent Configuration
 
 ```yaml
 agent_engine:
   instance_path: "my_package.agents.root_agent"
 ```
 
-既存のエージェントインスタンスを動的にインポートして使用します。
+Dynamically imports and uses an existing agent instance.
 
-### エージェントエンジンのデプロイ
+### Deploy Agent Engine
 
 ```bash
-# ドライランでデプロイ内容を確認
+# Dry run to preview deployment
 vaiae deploy --dry-run
 
-# 実際にデプロイ
+# Actually deploy
 vaiae deploy
 
-# 特定のプロファイルを使用
+# Use specific profile
 vaiae --profile production deploy
 
-# カスタム設定ファイルを使用
+# Use custom config file
 vaiae --yaml-file custom-config.yml deploy
 ```
 
-### デプロイ済みエージェントエンジンの一覧表示
+### List Deployed Agent Engines
 
 ```bash
 vaiae list
 ```
 
-### エージェントへのメッセージ送信
+### Send Messages to Agent
 
 ```bash
-# 基本的なメッセージ送信
-vaiae send -m "こんにちは、分析をお願いします" -d "my-agent-engine"
+# Basic message sending
+vaiae send -m "Hello, please perform analysis" -d "my-agent-engine"
 
-# セッションIDを指定して継続的な会話
-vaiae send -m "続きをお願いします" -d "my-agent-engine" -s "session-123"
+# Continue conversation with session ID
+vaiae send -m "Please continue" -d "my-agent-engine" -s "session-123"
 
-# ユーザーIDを指定
-vaiae send -m "レポートを作成してください" -d "my-agent-engine" -u "user-456"
+# Specify user ID
+vaiae send -m "Create a report" -d "my-agent-engine" -u "user-456"
 ```
 
-### エージェントエンジンの削除
+### Delete Agent Engine
 
 ```bash
-# 名前を指定して削除（ドライラン）
+# Delete by name (dry run)
 vaiae delete -n "my-agent-engine" --dry-run
 
-# 実際に削除
+# Actually delete
 vaiae delete -n "my-agent-engine"
 
-# 現在のプロファイル設定を使用して削除
+# Delete using current profile configuration
 vaiae delete --dry-run
 
-# 強制削除（子リソースも含む）
+# Force delete (including child resources)
 vaiae delete -n "my-agent-engine" --force
 ```
 
-### デバッグモード
+### Debug Mode
 
 ```bash
-# 詳細なログ出力でデバッグ
+# Debug with verbose logging
 vaiae --debug deploy
 ```
 
-## 🐍 Python API使用方法
+## 🐍 Python API Usage
 
-### 基本的な使用方法
+### Basic Usage
 
 ```python
 from vaiae.core import Core
 
-# Core インスタンスの初期化
+# Initialize Core instance
 core = Core(
     yaml_file_path=".agent-engine.yml",
     profile="default"
 )
 
-# デプロイ
+# Deploy
 core.create_or_update_from_yaml(dry_run=False)
 
-# メッセージ送信
+# Send message
 response = core.send_message(
-    message="分析をお願いします",
+    message="Please perform analysis",
     display_name="my-agent-engine",
     user_id="user123"
 )
 print(response)
 ```
 
-### プロファイル別のデプロイ
+### Profile-based Deployment
 
 ```python
 from vaiae.core import Core
 
-# 開発環境にデプロイ
+# Deploy to development environment
 dev_core = Core(yaml_file_path=".agent-engine.yml", profile="development")
 dev_core.create_or_update_from_yaml(dry_run=False)
 
-# 本番環境にデプロイ
+# Deploy to production environment
 prod_core = Core(yaml_file_path=".agent-engine.yml", profile="production")
 prod_core.create_or_update_from_yaml(dry_run=False)
 ```
 
-### 設定のオーバーライド
+### Override Configuration
 
 ```python
 from vaiae.core import Core
 
 core = Core(yaml_file_path=".agent-engine.yml", profile="development")
 
-# YAML設定を部分的にオーバーライド
+# Partially override YAML configuration
 core.create_or_update_from_yaml(
     dry_run=False,
-    description="カスタム説明",
+    description="Custom description",
     env_vars={
         "CUSTOM_VAR": "custom_value",
         "API_ENDPOINT": "https://api.example.com"
@@ -238,122 +238,122 @@ core.create_or_update_from_yaml(
 )
 ```
 
-### エージェントエンジンの管理
+### Agent Engine Management
 
 ```python
 from vaiae.core import Core
 
 core = Core(yaml_file_path=".agent-engine.yml", profile="default")
 
-# 一覧取得
+# List agent engines
 agent_engines = core.list_agent_engine()
 for engine in agent_engines:
     print(f"Name: {engine.display_name}")
     print(f"Resource: {engine.resource_name}")
 
-# 削除
+# Delete
 core.delete_agent_engine_from_yaml(
     force=False,
     dry_run=False
 )
 ```
 
-## 🔍 トラブルシューティング
+## 🔍 Troubleshooting
 
-### よくある問題と解決方法
+### Common Issues and Solutions
 
-#### 認証エラー
+#### Authentication Error
 
 ```
 Error: Could not automatically determine credentials
 ```
 
-**解決方法:**
+**Solution:**
 ```bash
 gcloud auth application-default login
-# または
+# or
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 ```
 
-#### 権限不足エラー
+#### Permission Denied Error
 
 ```
 Error: Permission denied
 ```
 
-**解決方法:**
-- サービスアカウントまたはユーザーに以下の権限が必要です：
+**Solution:**
+- The service account or user needs the following permissions:
   - `aiplatform.agentEngines.create`
   - `aiplatform.agentEngines.update`
   - `aiplatform.agentEngines.delete`
   - `aiplatform.agentEngines.list`
 
-#### YAML設定エラー
+#### YAML Configuration Error
 
 ```
 Error: Invalid YAML configuration
 ```
 
-**解決方法:**
-- YAML構文が正しいか確認
-- 必須フィールドが設定されているか確認
-- インデントが正しいか確認
+**Solution:**
+- Check YAML syntax is correct
+- Verify required fields are configured
+- Verify indentation is correct
 
-### デバッグ方法
+### Debugging
 
-詳細なログを確認するには：
+For detailed logs:
 
 ```bash
 vaiae --debug deploy
 ```
 
-## 🧪 開発・テスト
+## 🧪 Development & Testing
 
-### 開発環境のセットアップ
+### Development Environment Setup
 
 ```bash
 git clone https://github.com/toyama0919/vaiae.git
 cd vaiae
 
-# 開発用依存関係のインストール
+# Install development dependencies
 pip install -e ".[test]"
 ```
 
-### テストの実行
+### Run Tests
 
 ```bash
-# テストパッケージのインストール
+# Install test packages
 ./scripts/ci.sh install
 
-# テスト実行
+# Run tests
 ./scripts/ci.sh run-test
 
-# 個別テスト実行
+# Run individual tests
 pytest tests/test_commands.py
 pytest tests/test_util.py
 ```
 
-### コード品質チェック
+### Code Quality Checks
 
 ```bash
-# flake8, black, pytestを実行
+# Run flake8, black, pytest
 ./scripts/ci.sh run-test
 ```
 
-### リリース
+### Release
 
 ```bash
-# バージョンタグ作成とPyPIリリース
+# Create version tag and PyPI release
 ./scripts/ci.sh release
 ```
 
-## 📚 API リファレンス
+## 📚 API Reference
 
-### Core クラス
+### Core Class
 
-主要なAPIクラスです。
+Main API class.
 
-#### 初期化
+#### Initialization
 
 ```python
 Core(
@@ -366,52 +366,52 @@ Core(
 )
 ```
 
-#### 主要メソッド
+#### Main Methods
 
-- `create_or_update_from_yaml(dry_run=False, **overrides)`: エージェントエンジンのデプロイ
-- `delete_agent_engine_from_yaml(force=False, dry_run=False)`: エージェントエンジンの削除
-- `send_message(message, display_name, session_id=None, user_id=None)`: メッセージ送信
-- `list_agent_engine()`: エージェントエンジン一覧取得
+- `create_or_update_from_yaml(dry_run=False, **overrides)`: Deploy agent engine
+- `delete_agent_engine_from_yaml(force=False, dry_run=False)`: Delete agent engine
+- `send_message(message, display_name, session_id=None, user_id=None)`: Send message
+- `list_agent_engine()`: List agent engines
 
-## 🤝 貢献
+## 🤝 Contributing
 
-プロジェクトへの貢献を歓迎します！
+Contributions to the project are welcome!
 
-### 貢献方法
+### How to Contribute
 
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-### 開発ガイドライン
+### Development Guidelines
 
-- コードスタイル: Black + flake8
-- テスト: pytest
-- コミットメッセージ: 英語で簡潔に
-- ドキュメント: 新機能には適切なドキュメントを追加
+- Code style: Black + flake8
+- Testing: pytest
+- Commit messages: Keep them concise and in English
+- Documentation: Add appropriate documentation for new features
 
-## 📄 ライセンス
+## 📄 License
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 作者
+## 👨‍💻 Author
 
 **Hiroshi Toyama** - [toyama0919@gmail.com](mailto:toyama0919@gmail.com)
 
-## 🔗 関連リンク
+## 🔗 Related Links
 
 - [PyPI Package](https://pypi.org/project/vaiae/)
 - [GitHub Repository](https://github.com/toyama0919/vaiae)
 - [Google Cloud Vertex AI](https://cloud.google.com/vertex-ai)
 - [Vertex AI Agent Builder](https://cloud.google.com/vertex-ai/docs/agent-builder)
 
-## 📈 変更履歴
+## 📈 Changelog
 
 ### v0.1.0
-- 初回リリース
-- YAMLベース設定サポート
-- プロファイル管理機能
-- 基本的なCRUD操作
-- Python API提供
+- Initial release
+- YAML-based configuration support
+- Profile management functionality
+- Basic CRUD operations
+- Python API provided
