@@ -122,6 +122,14 @@ agent_engine:
 
 Dynamically imports and uses an existing agent instance.
 
+### Important Notes
+
+**⚠️ About `display_name`:**
+- The `display_name` serves as a **unique identifier** for agent engines
+- When deploying, if an agent engine with the same `display_name` exists, it will be **updated** instead of creating a new one
+- Make sure to use **unique** `display_name` values for different agent engines
+- Use different `display_name` values across profiles (dev, prod, etc.) to manage separate environments
+
 ### Deploy Agent Engine
 
 ```bash
