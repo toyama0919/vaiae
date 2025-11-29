@@ -122,6 +122,63 @@ agent_engine:
 
 Dynamically imports and uses an existing agent instance.
 
+#### Example Agent Implementation
+
+Here's a simple example of creating an AI Agent using google-adk:
+
+```python
+# my_package/agents.py
+from google.adk.agents import Agent
+
+# Define tools as regular functions
+def get_weather(location: str) -> str:
+    """Get weather information for a location.
+
+    Args:
+        location: City name
+
+    Returns:
+        Weather information
+    """
+    return f"The weather in {location} is sunny, 22°C"
+
+def calculate_sum(a: int, b: int) -> int:
+    """Calculate the sum of two numbers.
+
+    Args:
+        a: First number
+        b: Second number
+
+    Returns:
+        Sum of a and b
+    """
+    return a + b
+
+# Create the root agent
+root_agent = Agent(
+    name="my_agent",
+    model="gemini-2.0-flash-exp",
+    description="A helpful assistant that can check weather and perform calculations.",
+    instruction="""
+    You are a helpful assistant with the following capabilities:
+    - Check weather information using get_weather tool
+    - Perform calculations using calculate_sum tool
+
+    Always be polite and provide clear responses.
+    """,
+    tools=[get_weather, calculate_sum],
+)
+```
+
+Then reference this agent in your `.agent-engine.yml`:
+
+```yaml
+agent_engine:
+  instance_path: "my_package.agents.root_agent"
+```
+
+For more complex agent examples, refer to the [Vertex AI documentation](https://cloud.google.com/vertex-ai/docs) and [google-adk PyPI package](https://pypi.org/project/google-adk/).
+
 ### Important Notes
 
 **⚠️ About `display_name`:**
