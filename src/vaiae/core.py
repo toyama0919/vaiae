@@ -1,9 +1,6 @@
 import io
 import sys
 
-import vertexai
-from vertexai.preview import reasoning_engines
-from vertexai import agent_engines
 import pprint
 import logging
 from .logger import get_logger
@@ -23,6 +20,7 @@ class Core:
         self.logger = get_logger(level=logging.DEBUG if debug else logging.INFO)
         self.profile = profile
         self.config = None
+        self._vertex_ai_initialized = False
 
         # Find YAML file if not specified
         if yaml_file_path is None:
@@ -34,9 +32,6 @@ class Core:
         # Initialize from YAML (required)
         self._initialize_from_yaml(yaml_file_path, profile)
 
-        # Initialize Vertex AI if all required parameters are provided
-        self._initialize_vertex_ai()
-
     def send_message(
         self,
         message: str,
@@ -44,6 +39,10 @@ class Core:
         user_id: str = None,
         local: bool = False,
     ):
+        from vertexai.preview import reasoning_engines
+
+        self._ensure_vertex_ai_initialized()
+
         if local:
             # For local mode, get agent instance from current config
             agent_config = self.config.get("agent_engine", {})
@@ -91,6 +90,10 @@ class Core:
         Returns:
             Agent engine object if found, None if no matching agent engine exists.
         """
+        from vertexai import agent_engines
+
+        self._ensure_vertex_ai_initialized()
+
         agent_engine_list = list(
             agent_engines.list(
                 filter=f'display_name="{display_name}"',
@@ -104,6 +107,9 @@ class Core:
         Returns:
             list: List of all agent engine objects.
         """
+        from vertexai import agent_engines
+
+        self._ensure_vertex_ai_initialized()
         self.logger.debug("Listing all agent engines...")
         agent_engine_list = list(agent_engines.list())
         return agent_engine_list
@@ -234,13 +240,18 @@ class Core:
         if vertex_ai_config.get("staging_bucket"):
             self.staging_bucket = vertex_ai_config.get("staging_bucket")
 
-    def _initialize_vertex_ai(self) -> None:
-        """Initialize Vertex AI with current instance settings.
+    def _ensure_vertex_ai_initialized(self) -> None:
+        """Ensure Vertex AI is initialized (lazy initialization).
 
         Returns:
             None
         """
+        if self._vertex_ai_initialized:
+            return
+
         if self.project and self.location:
+            import vertexai
+
             self.logger.debug("Initializing Vertex AI...")
             self.logger.debug(f"Project: [{self.project}]")
             self.logger.debug(f"Location: [{self.location}]")
@@ -255,6 +266,7 @@ class Core:
                 init_kwargs["staging_bucket"] = f"gs://{self.staging_bucket}"
 
             vertexai.init(**init_kwargs)
+            self._vertex_ai_initialized = True
 
     def _apply_overrides(self, config: dict, overrides: dict) -> dict:
         """Apply override parameters to configuration.
@@ -349,6 +361,9 @@ class Core:
         Returns:
             None
         """
+        from vertexai import agent_engines
+
+        self._ensure_vertex_ai_initialized()
         self.logger.info(
             "Agent Engine Config:\n" + pprint.pformat(agent_engine_config, indent=2)
         )

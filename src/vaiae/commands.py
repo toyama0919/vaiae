@@ -191,3 +191,7 @@ def delete(ctx, name, force, dry_run):
 
 def main():
     cli(obj={})
+
+
+if __name__ == "__main__":
+    main()
