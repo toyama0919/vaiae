@@ -179,7 +179,7 @@ class Core:
             config = self._apply_overrides(config, overrides)
 
         # Extract agent engine configuration
-        agent_engine_config = self._build_agent_engine_config(config)
+        agent_instance, config_dict = self._build_agent_engine_config(config)
 
         # Get display_name from config
         config_display_name = config.get("display_name")
@@ -187,7 +187,7 @@ class Core:
             raise ValueError("display_name must be provided in YAML config")
 
         # Call existing create_or_update method
-        self.create_or_update(agent_engine_config, config_display_name, dry_run)
+        self.create_or_update(agent_instance, config_dict, config_display_name, dry_run)
 
     def delete_agent_engine_from_yaml(
         self,
@@ -319,14 +319,14 @@ class Core:
                 "instance_path must be provided in agent_engine configuration"
             )
 
-    def _build_agent_engine_config(self, config: dict) -> dict:
+    def _build_agent_engine_config(self, config: dict) -> tuple:
         """Build agent engine configuration from YAML config.
 
         Args:
             config (dict): Configuration dictionary loaded from YAML.
 
         Returns:
-            dict: Agent engine configuration ready for create/update.
+            tuple: (agent_instance, config_dict) ready for create/update with new API.
         """
         # Extract agent engine configuration
         agent_config = config.get("agent_engine", {})
@@ -334,26 +334,52 @@ class Core:
         # Get agent instance using the reusable method
         agent_instance = self._get_agent_instance_from_config(agent_config)
 
-        # Build the complete configuration
-        agent_engine_config = {
-            "agent_engine": agent_instance,
-            "description": config.get("description"),
+        # Build the configuration dict according to new API
+        config_dict = {
             "display_name": config.get("display_name"),
-            "env_vars": config.get("env_vars", {}),
+            "description": config.get("description"),
+            "requirements": config.get("requirements", []),
             "extra_packages": config.get("extra_packages", []),
             "gcs_dir_name": config.get("gcs_dir_name"),
-            "requirements": config.get("requirements", []),
+            "env_vars": config.get("env_vars", {}),
         }
 
-        return agent_engine_config
+        # Add new optional parameters if provided
+        if "labels" in config:
+            config_dict["labels"] = config["labels"]
+        if "build_options" in config:
+            config_dict["build_options"] = config["build_options"]
+        if "identity_type" in config:
+            config_dict["identity_type"] = config["identity_type"]
+        if "service_account" in config:
+            config_dict["service_account"] = config["service_account"]
+        if "min_instances" in config:
+            config_dict["min_instances"] = config["min_instances"]
+        if "max_instances" in config:
+            config_dict["max_instances"] = config["max_instances"]
+        if "resource_limits" in config:
+            config_dict["resource_limits"] = config["resource_limits"]
+        if "container_concurrency" in config:
+            config_dict["container_concurrency"] = config["container_concurrency"]
+        if "encryption_spec" in config:
+            config_dict["encryption_spec"] = config["encryption_spec"]
+        if "agent_framework" in config:
+            config_dict["agent_framework"] = config["agent_framework"]
+
+        # Private Service Connect configuration for VPC access
+        if "psc_interface_config" in config:
+            config_dict["psc_interface_config"] = config["psc_interface_config"]
+
+        return agent_instance, config_dict
 
     def create_or_update(
-        self, agent_engine_config: dict, display_name: str, dry_run: bool = False
+        self, agent_instance, config_dict: dict, display_name: str, dry_run: bool = False
     ) -> None:
         """Deploy or update an agent engine based on whether it already exists.
 
         Args:
-            agent_engine_config (dict): Configuration for the agent engine.
+            agent_instance: The agent instance to deploy.
+            config_dict (dict): Configuration dictionary for the agent engine.
             display_name (str): Display name to check for existing agent engine.
             dry_run (bool, optional): If True, performs validation without actually
                 deploying or updating. Defaults to False.
@@ -365,7 +391,10 @@ class Core:
 
         self._ensure_vertex_ai_initialized()
         self.logger.info(
-            "Agent Engine Config:\n" + pprint.pformat(agent_engine_config, indent=2)
+            "Agent Instance: " + str(type(agent_instance).__name__)
+        )
+        self.logger.info(
+            "Agent Engine Config:\n" + pprint.pformat(config_dict, indent=2)
         )
         agent_engine = self.get_agent_engine(display_name)
         if agent_engine:
@@ -377,11 +406,15 @@ class Core:
             else:
                 agent_engines.update(
                     resource_name=agent_engine.resource_name,
-                    **agent_engine_config,
+                    agent=agent_instance,
+                    config=config_dict,
                 )
         else:
             if dry_run:
                 self.logger.info("Dry run mode: not deploying the agent engine.")
             else:
                 self.logger.info("Deploying agent engine...")
-                agent_engines.create(**agent_engine_config)
+                agent_engines.create(
+                    agent=agent_instance,
+                    config=config_dict,
+                )

@@ -94,6 +94,37 @@ default:
   extra_packages:
     - "my-custom-package-1.0.0-py3-none-any.whl"
 
+  # Optional: Advanced configuration
+  labels:
+    env: "production"
+    team: "ai-team"
+
+  # Recommended: Use Agent Identity for better security
+  identity_type: "AGENT_IDENTITY"
+
+  # Or use Service Account (alternative to identity_type)
+  # service_account: "my-service-account@project.iam.gserviceaccount.com"
+
+  # Optional: Scaling configuration
+  min_instances: 1
+  max_instances: 10
+
+  # Optional: Resource limits
+  resource_limits:
+    cpu: "2"
+    memory: "4Gi"
+
+  container_concurrency: 10
+
+  # Optional: Private Service Connect for VPC access
+  # psc_interface_config:
+  #   network_attachment: "projects/my-project/regions/asia-northeast1/networkAttachments/my-attachment"
+  #   # dns_peering_configs is optional - only needed for private DNS zones
+  #   # dns_peering_configs:
+  #   #   - domain: "example.internal"
+  #   #     target_project: "my-vpc-host-project"
+  #   #     target_network: "my-vpc-network"
+
 # Development environment
 development:
   vertex_ai:
@@ -186,6 +217,95 @@ For more complex agent examples, refer to the [Vertex AI documentation](https://
 - When deploying, if an agent engine with the same `display_name` exists, it will be **updated** instead of creating a new one
 - Make sure to use **unique** `display_name` values for different agent engines
 - Use different `display_name` values across profiles (dev, prod, etc.) to manage separate environments
+
+### Advanced Configuration Options
+
+The following optional parameters are available for advanced configurations:
+
+#### Identity and Security
+
+- **`identity_type`**: (Recommended) Specify `"AGENT_IDENTITY"` to create a dedicated identity for the agent
+  - **Agent Identity Mode** (Recommended): Creates an agent-specific identity with minimal privileges
+    - More secure than service accounts
+    - Automatic lifecycle management (cleaned up when agent is deleted)
+    - Better audit logging - tracks both agent and user actions
+    - Follows the principle of least privilege
+  - **Service Account Mode** (Traditional): Use `service_account` parameter instead
+    - Useful when sharing the same identity across multiple agents
+  - Example:
+    ```yaml
+    # Recommended: Use Agent Identity
+    identity_type: "AGENT_IDENTITY"
+
+    # Or use Service Account
+    service_account: "my-agent@project.iam.gserviceaccount.com"
+    ```
+  - Reference: [Agent Identity Documentation](https://cloud.google.com/agent-builder/agent-engine/agent-identity)
+
+- **`service_account`**: Service account email for the agent engine (alternative to `identity_type`)
+- **`encryption_spec`**: Encryption specification for data at rest
+
+#### Resource Management
+
+- **`labels`**: Key-value pairs for organizing and categorizing your agent engines
+- **`min_instances`**: Minimum number of instances to keep running (default: 0)
+- **`max_instances`**: Maximum number of instances to scale up to (default: 1)
+- **`resource_limits`**: CPU and memory limits for each instance
+  - `cpu`: CPU limit (e.g., "1", "2")
+  - `memory`: Memory limit (e.g., "2Gi", "4Gi")
+- **`container_concurrency`**: Maximum number of concurrent requests per instance
+
+#### Private Service Connect (PSC) for VPC Access
+
+- **`psc_interface_config`**: Configuration for Private Service Connect to enable VPC access
+  - **`network_attachment`**: (Required) Network attachment resource (NOT the VPC network ID)
+    - Network attachment is a separate resource that must be created beforehand
+    - It links your agent to a specific VPC network and subnet
+    - Format: `"projects/PROJECT_ID/regions/REGION/networkAttachments/ATTACHMENT_NAME"`
+    - Use full path if the attachment is in a different project (e.g., Shared VPC host project)
+    - **Note**: This is different from the VPC network ID (e.g., `projects/PROJECT_ID/global/networks/NETWORK_NAME`)
+  - **`dns_peering_configs`**: (Optional) List of DNS peering configurations
+    - Only required if you need to access private Cloud DNS zones in your VPC
+    - **`domain`**: DNS name of the private Cloud DNS zone
+    - **`target_project`**: Project ID hosting the VPC network
+    - **`target_network`**: VPC network name (e.g., `"my-vpc"`)
+
+Example PSC configuration for VPC access:
+```yaml
+# Minimal PSC configuration (network attachment only)
+psc_interface_config:
+  network_attachment: "projects/my-project/regions/asia-northeast1/networkAttachments/my-attachment"
+
+# With DNS peering (optional - for accessing private DNS zones)
+psc_interface_config:
+  network_attachment: "projects/my-project/regions/asia-northeast1/networkAttachments/my-attachment"
+  dns_peering_configs:
+    - domain: "example.internal"
+      target_project: "my-vpc-host-project"
+      target_network: "my-vpc-network"
+    - domain: "api.internal"
+      target_project: "my-vpc-host-project"
+      target_network: "my-vpc-network"
+```
+
+**Important Prerequisites:**
+1. Create a network attachment resource in your project before deploying
+2. The network attachment must be linked to your target VPC network and subnet
+3. Configure IAM permissions for the agent to use the network attachment
+
+**Benefits:**
+- Access VPC resources (databases, internal APIs) without internet exposure
+- Multiple agents can share a single network attachment or use dedicated ones
+- Support for Shared VPC configurations
+
+Reference: [Private Service Connect Documentation](https://cloud.google.com/agent-builder/agent-engine/deploy#psc-i)
+
+#### Other Options
+
+- **`build_options`**: Custom build options for the agent engine
+- **`agent_framework`**: Framework identifier for the agent
+
+These options allow fine-grained control over your agent engine's resource usage, scaling behavior, security settings, and network configuration.
 
 ### Deploy Agent Engine
 
