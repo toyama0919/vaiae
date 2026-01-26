@@ -293,6 +293,44 @@ psc_interface_config:
 2. The network attachment must be linked to your target VPC network and subnet
 3. Configure IAM permissions for the agent to use the network attachment
 
+**Creating Network Attachment with Terraform:**
+```hcl
+# Network Attachment resource
+resource "google_compute_network_attachment" "agent_attachment" {
+  name        = "my-attachment"
+  project     = "my-project"
+  region      = "asia-northeast1"
+  description = "Network attachment for Agent Engine"
+
+  # Connection preference for Private Service Connect
+  connection_preference = "ACCEPT_AUTOMATIC"
+
+  # Subnetworks to attach
+  subnetworks = [
+    "projects/my-project/regions/asia-northeast1/subnetworks/my-subnet"
+  ]
+
+  # Optional: Producer accept lists (IP ranges allowed to connect)
+  producer_accept_lists = [
+    "my-project"  # Allow connections from this project
+  ]
+}
+
+# Output the attachment ID for use in agent configuration
+output "network_attachment_id" {
+  value = google_compute_network_attachment.agent_attachment.id
+}
+```
+
+**Creating Network Attachment with gcloud:**
+```bash
+gcloud compute network-attachments create my-attachment \
+  --region=asia-northeast1 \
+  --subnets=my-subnet \
+  --connection-preference=ACCEPT_AUTOMATIC \
+  --producer-accept-list=my-project
+```
+
 **Benefits:**
 - Access VPC resources (databases, internal APIs) without internet exposure
 - Multiple agents can share a single network attachment or use dedicated ones
