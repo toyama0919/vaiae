@@ -21,6 +21,7 @@ class Core:
         self.profile = profile
         self.config = None
         self._vertex_ai_initialized = False
+        self._client = None
 
         # Find YAML file if not specified
         if yaml_file_path is None:
@@ -90,13 +91,11 @@ class Core:
         Returns:
             Agent engine object if found, None if no matching agent engine exists.
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
 
         agent_engine_list = list(
-            agent_engines.list(
-                filter=f'display_name="{display_name}"',
+            self._client.agent_engines.list(
+                config={"filter": f'display_name="{display_name}"'},
             )
         )
         return agent_engine_list[0] if agent_engine_list else None
@@ -107,11 +106,9 @@ class Core:
         Returns:
             list: List of all agent engine objects.
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
         self.logger.debug("Listing all agent engines...")
-        agent_engine_list = list(agent_engines.list())
+        agent_engine_list = list(self._client.agent_engines.list())
         return agent_engine_list
 
     def delete_agent_engine(
@@ -145,7 +142,7 @@ class Core:
             if not agent_engine:
                 raise Exception(f"Agent engine with display name '{name}' not found")
 
-            self.logger.info(f"Found agent engine: {agent_engine.resource_name}")
+            self.logger.info(f"Found agent engine: {agent_engine.api_resource.name}")
 
             # Delete the agent engine
             self.logger.info("Deleting agent engine...")
@@ -266,6 +263,11 @@ class Core:
                 init_kwargs["staging_bucket"] = f"gs://{self.staging_bucket}"
 
             vertexai.init(**init_kwargs)
+            # Create client for new API
+            self._client = vertexai.Client(
+                project=self.project,
+                location=self.location,
+            )
             self._vertex_ai_initialized = True
 
     def _apply_overrides(self, config: dict, overrides: dict) -> dict:
@@ -343,6 +345,10 @@ class Core:
             "gcs_dir_name": config.get("gcs_dir_name"),
             "env_vars": config.get("env_vars", {}),
         }
+        
+        # Add staging_bucket if available
+        if self.staging_bucket:
+            config_dict["staging_bucket"] = f"gs://{self.staging_bucket}"
 
         # Add new optional parameters if provided
         if "labels" in config:
@@ -387,8 +393,6 @@ class Core:
         Returns:
             None
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
         self.logger.info(
             "Agent Instance: " + str(type(agent_instance).__name__)
@@ -399,13 +403,14 @@ class Core:
         agent_engine = self.get_agent_engine(display_name)
         if agent_engine:
             self.logger.info(
-                f"Found existing agent engine: {agent_engine.resource_name}"
+                f"Found existing agent engine: {agent_engine.api_resource.name}"
             )
             if dry_run:
                 self.logger.info("Dry run mode: not updating the agent engine.")
             else:
-                agent_engines.update(
-                    resource_name=agent_engine.resource_name,
+                self.logger.info("Updating agent engine...")
+                self._client.agent_engines.update(
+                    name=agent_engine.api_resource.name,
                     agent=agent_instance,
                     config=config_dict,
                 )
@@ -414,7 +419,7 @@ class Core:
                 self.logger.info("Dry run mode: not deploying the agent engine.")
             else:
                 self.logger.info("Deploying agent engine...")
-                agent_engines.create(
+                self._client.agent_engines.create(
                     agent=agent_instance,
                     config=config_dict,
                 )
