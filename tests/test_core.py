@@ -1,7 +1,7 @@
 import tempfile
 import os
 import yaml
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 import pytest
 from vaiae.core import Core
 
