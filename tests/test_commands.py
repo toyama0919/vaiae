@@ -135,14 +135,14 @@ class TestCommands:
         """Test successful list command"""
         mock_core_instance = MagicMock()
 
-        # Create mock agent engine object
+        # Create mock agent engine object with api_resource
         mock_agent_engine = MagicMock()
-        mock_agent_engine.display_name = "test-agent"
-        mock_agent_engine.resource_name = (
-            "projects/test/locations/asia-northeast1/agentEngines/test-agent"
+        mock_agent_engine.api_resource.display_name = "test-agent"
+        mock_agent_engine.api_resource.name = (
+            "projects/test/locations/asia-northeast1/reasoningEngines/test-agent"
         )
-        mock_agent_engine.create_time = "2024-01-01T00:00:00Z"
-        mock_agent_engine.update_time = "2024-01-01T00:00:00Z"
+        mock_agent_engine.api_resource.create_time = "2024-01-01T00:00:00Z"
+        mock_agent_engine.api_resource.update_time = "2024-01-01T00:00:00Z"
 
         mock_core_instance.list_agent_engine.return_value = [mock_agent_engine]
         mock_core_class.return_value = mock_core_instance

@@ -118,10 +118,10 @@ def list(ctx):
         for agent_engine in agent_engines:
             table_data.append(
                 [
-                    agent_engine.display_name,
-                    agent_engine.resource_name,
-                    getattr(agent_engine, "create_time", "N/A"),
-                    getattr(agent_engine, "update_time", "N/A"),
+                    agent_engine.api_resource.display_name,
+                    agent_engine.api_resource.name,
+                    getattr(agent_engine.api_resource, "create_time", "N/A"),
+                    getattr(agent_engine.api_resource, "update_time", "N/A"),
                 ]
             )
 
@@ -130,6 +130,68 @@ def list(ctx):
         click.echo(f"Found {len(agent_engines)} agent engine(s):")
         click.echo()
         click.echo(tabulate(table_data, headers=headers, tablefmt="simple"))
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+
+@cli.command("get", help="Get details of a deployed agent engine from Vertex AI.")
+@click.option(
+    "--name",
+    "-n",
+    help="Display name of the agent engine to retrieve. If not specified, uses the current profile configuration.",
+)
+@click.pass_context
+def get(ctx, name):
+    """Get details of a deployed agent engine from Vertex AI."""
+    import json
+    from google.protobuf.json_format import MessageToDict
+
+    try:
+        # Determine which display name to use
+        if name:
+            display_name = name
+        else:
+            # Use display_name from current profile configuration
+            display_name = ctx.obj.core.config.get("display_name")
+            if not display_name:
+                click.echo(
+                    "Error: display_name not found in profile configuration. Please specify --name.",
+                    err=True,
+                )
+                raise click.Abort()
+
+        agent_engine = ctx.obj.core.get_agent_engine(display_name)
+
+        if not agent_engine:
+            click.echo(f"Agent engine with display name '{display_name}' not found.")
+            return
+
+        # Convert the api_resource to dictionary for JSON output
+        # Try to convert from protobuf message if available
+        try:
+            # If it's a protobuf message, use MessageToDict
+            agent_dict = MessageToDict(agent_engine.api_resource._pb)
+        except (AttributeError, TypeError):
+            # Otherwise, try to convert to dict manually
+            agent_dict = {}
+            for attr in dir(agent_engine.api_resource):
+                if not attr.startswith("_"):
+                    try:
+                        value = getattr(agent_engine.api_resource, attr)
+                        # Skip methods
+                        if not callable(value):
+                            # Convert timestamp objects to string
+                            if hasattr(value, "isoformat"):
+                                agent_dict[attr] = value.isoformat()
+                            else:
+                                agent_dict[attr] = value
+                    except Exception:
+                        pass
+
+        # Output as formatted JSON
+        click.echo(json.dumps(agent_dict, indent=2, ensure_ascii=False, default=str))
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
