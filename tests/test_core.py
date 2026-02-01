@@ -104,7 +104,9 @@ class TestCore:
         """Test get_agent_engine with success"""
         mock_client_instance = MagicMock()
         mock_agent_engine = MagicMock()
-        mock_agent_engine.api_resource.name = "projects/test/locations/us-central1/reasoningEngines/123"
+        mock_agent_engine.api_resource.name = (
+            "projects/test/locations/us-central1/reasoningEngines/123"
+        )
         mock_agent_engine.api_resource.display_name = "test-agent"
 
         mock_client_instance.agent_engines.list.return_value = [mock_agent_engine]
@@ -168,7 +170,9 @@ class TestCore:
         """Test delete_agent_engine with success"""
         mock_client_instance = MagicMock()
         mock_agent_engine = MagicMock()
-        mock_agent_engine.api_resource.name = "projects/test/locations/us-central1/reasoningEngines/123"
+        mock_agent_engine.api_resource.name = (
+            "projects/test/locations/us-central1/reasoningEngines/123"
+        )
         mock_agent_engine.delete = MagicMock()
 
         mock_client_instance.agent_engines.list.return_value = [mock_agent_engine]
@@ -205,7 +209,9 @@ class TestCore:
         """Test delete_agent_engine in dry run mode"""
         mock_client_instance = MagicMock()
         mock_agent_engine = MagicMock()
-        mock_agent_engine.api_resource.name = "projects/test/locations/us-central1/reasoningEngines/123"
+        mock_agent_engine.api_resource.name = (
+            "projects/test/locations/us-central1/reasoningEngines/123"
+        )
         mock_agent_engine.delete = MagicMock()
 
         mock_client_instance.agent_engines.list.return_value = [mock_agent_engine]
@@ -245,7 +251,8 @@ class TestCore:
             agent_config = {}
 
             with pytest.raises(
-                ValueError, match="instance_path must be provided in agent_engine configuration"
+                ValueError,
+                match="instance_path must be provided in agent_engine configuration",
             ):
                 core._get_agent_instance_from_config(agent_config)
 
@@ -270,7 +277,10 @@ class TestCore:
             ]
             assert config_dict["extra_packages"] == ["test_package.whl"]
             assert config_dict["env_vars"] == {"TEST_VAR": "test_value"}
-            assert config_dict["service_account"] == "test-sa@test-project.iam.gserviceaccount.com"
+            assert (
+                config_dict["service_account"]
+                == "test-sa@test-project.iam.gserviceaccount.com"
+            )
             assert config_dict["staging_bucket"] == "gs://test-bucket"
             assert config_dict["labels"] == {"env": "test"}
             assert config_dict["min_instances"] == 1
@@ -305,9 +315,7 @@ class TestCore:
                 "staging_bucket": "gs://test-bucket",
             }
 
-            core.create_or_update(
-                mock_agent, config_dict, "test-agent", dry_run=False
-            )
+            core.create_or_update(mock_agent, config_dict, "test-agent", dry_run=False)
 
             mock_client_instance.agent_engines.create.assert_called_once_with(
                 agent=mock_agent,
@@ -325,7 +333,9 @@ class TestCore:
         mock_import.return_value = mock_agent
 
         mock_existing_agent = MagicMock()
-        mock_existing_agent.api_resource.name = "projects/test/locations/us-central1/reasoningEngines/123"
+        mock_existing_agent.api_resource.name = (
+            "projects/test/locations/us-central1/reasoningEngines/123"
+        )
 
         mock_client_instance = MagicMock()
         mock_client_instance.agent_engines.list.return_value = [mock_existing_agent]
@@ -346,9 +356,7 @@ class TestCore:
                 "staging_bucket": "gs://test-bucket",
             }
 
-            core.create_or_update(
-                mock_agent, config_dict, "test-agent", dry_run=False
-            )
+            core.create_or_update(mock_agent, config_dict, "test-agent", dry_run=False)
 
             mock_client_instance.agent_engines.update.assert_called_once_with(
                 name="projects/test/locations/us-central1/reasoningEngines/123",
@@ -384,9 +392,7 @@ class TestCore:
                 "staging_bucket": "gs://test-bucket",
             }
 
-            core.create_or_update(
-                mock_agent, config_dict, "test-agent", dry_run=True
-            )
+            core.create_or_update(mock_agent, config_dict, "test-agent", dry_run=True)
 
             # Verify create was not called
             mock_client_instance.agent_engines.create.assert_not_called()
@@ -423,7 +429,7 @@ class TestCore:
         """Test create_or_update_from_yaml without display_name"""
         mock_agent = MagicMock()
         mock_import.return_value = mock_agent
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create config without display_name
             config = {
@@ -442,7 +448,9 @@ class TestCore:
 
             core = Core(yaml_file_path=config_file, profile="default", debug=False)
 
-            with pytest.raises(ValueError, match="display_name must be provided in YAML config"):
+            with pytest.raises(
+                ValueError, match="display_name must be provided in YAML config"
+            ):
                 core.create_or_update_from_yaml(dry_run=False)
 
     @patch("vertexai.init")
@@ -451,7 +459,9 @@ class TestCore:
         """Test delete_agent_engine_from_yaml"""
         mock_client_instance = MagicMock()
         mock_agent_engine = MagicMock()
-        mock_agent_engine.api_resource.name = "projects/test/locations/us-central1/reasoningEngines/123"
+        mock_agent_engine.api_resource.name = (
+            "projects/test/locations/us-central1/reasoningEngines/123"
+        )
         mock_agent_engine.delete = MagicMock()
 
         mock_client_instance.agent_engines.list.return_value = [mock_agent_engine]
