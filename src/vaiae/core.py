@@ -345,7 +345,7 @@ class Core:
             "gcs_dir_name": config.get("gcs_dir_name"),
             "env_vars": config.get("env_vars", {}),
         }
-        
+
         # Add staging_bucket if available
         if self.staging_bucket:
             config_dict["staging_bucket"] = f"gs://{self.staging_bucket}"
@@ -379,7 +379,11 @@ class Core:
         return agent_instance, config_dict
 
     def create_or_update(
-        self, agent_instance, config_dict: dict, display_name: str, dry_run: bool = False
+        self,
+        agent_instance,
+        config_dict: dict,
+        display_name: str,
+        dry_run: bool = False,
     ) -> None:
         """Deploy or update an agent engine based on whether it already exists.
 
@@ -394,9 +398,7 @@ class Core:
             None
         """
         self._ensure_vertex_ai_initialized()
-        self.logger.info(
-            "Agent Instance: " + str(type(agent_instance).__name__)
-        )
+        self.logger.info("Agent Instance: " + str(type(agent_instance).__name__))
         self.logger.info(
             "Agent Engine Config:\n" + pprint.pformat(config_dict, indent=2)
         )

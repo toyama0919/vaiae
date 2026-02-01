@@ -147,7 +147,7 @@ def get(ctx, name):
     """Get details of a deployed agent engine from Vertex AI."""
     import json
     from google.protobuf.json_format import MessageToDict
-    
+
     try:
         # Determine which display name to use
         if name:
@@ -177,19 +177,19 @@ def get(ctx, name):
             # Otherwise, try to convert to dict manually
             agent_dict = {}
             for attr in dir(agent_engine.api_resource):
-                if not attr.startswith('_'):
+                if not attr.startswith("_"):
                     try:
                         value = getattr(agent_engine.api_resource, attr)
                         # Skip methods
                         if not callable(value):
                             # Convert timestamp objects to string
-                            if hasattr(value, 'isoformat'):
+                            if hasattr(value, "isoformat"):
                                 agent_dict[attr] = value.isoformat()
                             else:
                                 agent_dict[attr] = value
                     except Exception:
                         pass
-        
+
         # Output as formatted JSON
         click.echo(json.dumps(agent_dict, indent=2, ensure_ascii=False, default=str))
 
