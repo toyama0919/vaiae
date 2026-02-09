@@ -10,7 +10,7 @@ from .util import Util
 class Core:
     def __init__(
         self,
-        yaml_file_path: str = None,
+        yaml_file_path: str | None = None,
         profile: str = "default",
         debug: bool = False,
     ):
@@ -36,8 +36,8 @@ class Core:
     def send_message(
         self,
         message: str,
-        session_id: str = None,
-        user_id: str = None,
+        session_id: str | None = None,
+        user_id: str | None = None,
         local: bool = False,
     ):
         from vertexai.preview import reasoning_engines
