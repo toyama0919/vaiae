@@ -17,8 +17,11 @@ def get_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging
         # Get the calling module's name
         import inspect
 
-        frame = inspect.currentframe().f_back
-        name = frame.f_globals.get("__name__", "vaiae")
+        frame = inspect.currentframe()
+        if frame is not None and frame.f_back is not None:
+            name = frame.f_back.f_globals.get("__name__", "vaiae")
+        else:
+            name = "vaiae"
 
     logger = logging.getLogger(name)
 

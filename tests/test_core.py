@@ -266,6 +266,7 @@ class TestCore:
             config_file = self.create_test_yaml_config(temp_dir)
             core = Core(yaml_file_path=config_file, profile="default", debug=False)
 
+            assert core.config is not None
             agent_instance, config_dict = core._build_agent_engine_config(core.config)
 
             assert agent_instance == mock_agent

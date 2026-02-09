@@ -44,6 +44,12 @@ class Core:
 
         self._ensure_vertex_ai_initialized()
 
+        if self.config is None:
+            raise ValueError("Configuration not loaded")
+
+        if user_id is None:
+            raise ValueError("user_id must be provided")
+
         if local:
             # For local mode, get agent instance from current config
             agent_config = self.config.get("agent_engine", {})
@@ -54,22 +60,29 @@ class Core:
             )
         else:
             display_name = self.config.get("display_name")
+            if not display_name:
+                raise ValueError("display_name must be provided in configuration")
             self.app = self.get_agent_engine(
                 display_name=display_name,
             )
 
         # suppress output to stderr
         sys.stderr = io.StringIO()
+        actual_session_id: str
         if session_id is None:
             session = self.app.create_session(user_id=user_id)
             if isinstance(session, dict):
-                session_id = session.get("id")
+                actual_session_id = str(session.get("id"))
             else:
-                session_id = session.id
+                actual_session_id = str(session.id)
+        else:
+            actual_session_id = session_id
 
-        query_params = {
+        from typing import Any
+
+        query_params: dict[str, Any] = {
             "user_id": user_id,
-            "session_id": session_id,
+            "session_id": actual_session_id,
             "message": message,
         }
         self.logger.debug(f"Sending message with params: {query_params}")
@@ -93,6 +106,9 @@ class Core:
         """
         self._ensure_vertex_ai_initialized()
 
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
+
         agent_engine_list = list(
             self._client.agent_engines.list(
                 config={"filter": f'display_name="{display_name}"'},
@@ -107,6 +123,8 @@ class Core:
             list: List of all agent engine objects.
         """
         self._ensure_vertex_ai_initialized()
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
         self.logger.debug("Listing all agent engines...")
         agent_engine_list = list(self._client.agent_engines.list())
         return agent_engine_list
@@ -169,6 +187,8 @@ class Core:
         """
         # Use cached configuration from initialization
         config = self.config
+        if config is None:
+            raise ValueError("Configuration not loaded")
         self.logger.info(f"Using profile: {self.profile}")
 
         # Apply overrides to config
@@ -204,6 +224,8 @@ class Core:
         """
         # Use cached configuration from initialization
         config = self.config
+        if config is None:
+            raise ValueError("Configuration not loaded")
         self.logger.info(f"Using profile: {self.profile}")
 
         # Get display_name from config
@@ -398,6 +420,8 @@ class Core:
             None
         """
         self._ensure_vertex_ai_initialized()
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
         self.logger.info("Agent Instance: " + str(type(agent_instance).__name__))
         self.logger.info(
             "Agent Engine Config:\n" + pprint.pformat(config_dict, indent=2)
