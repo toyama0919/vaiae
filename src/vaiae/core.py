@@ -10,7 +10,7 @@ from .util import Util
 class Core:
     def __init__(
         self,
-        yaml_file_path: str = None,
+        yaml_file_path: str | None = None,
         profile: str = "default",
         debug: bool = False,
     ):
@@ -21,6 +21,7 @@ class Core:
         self.profile = profile
         self.config = None
         self._vertex_ai_initialized = False
+        self._client = None
 
         # Find YAML file if not specified
         if yaml_file_path is None:
@@ -35,13 +36,19 @@ class Core:
     def send_message(
         self,
         message: str,
-        session_id: str = None,
-        user_id: str = None,
+        session_id: str | None = None,
+        user_id: str | None = None,
         local: bool = False,
     ):
         from vertexai.preview import reasoning_engines
 
         self._ensure_vertex_ai_initialized()
+
+        if self.config is None:
+            raise ValueError("Configuration not loaded")
+
+        if user_id is None:
+            raise ValueError("user_id must be provided")
 
         if local:
             # For local mode, get agent instance from current config
@@ -53,22 +60,29 @@ class Core:
             )
         else:
             display_name = self.config.get("display_name")
+            if not display_name:
+                raise ValueError("display_name must be provided in configuration")
             self.app = self.get_agent_engine(
                 display_name=display_name,
             )
 
         # suppress output to stderr
         sys.stderr = io.StringIO()
+        actual_session_id: str
         if session_id is None:
             session = self.app.create_session(user_id=user_id)
             if isinstance(session, dict):
-                session_id = session.get("id")
+                actual_session_id = str(session.get("id"))
             else:
-                session_id = session.id
+                actual_session_id = str(session.id)
+        else:
+            actual_session_id = session_id
 
-        query_params = {
+        from typing import Any
+
+        query_params: dict[str, Any] = {
             "user_id": user_id,
-            "session_id": session_id,
+            "session_id": actual_session_id,
             "message": message,
         }
         self.logger.debug(f"Sending message with params: {query_params}")
@@ -90,13 +104,14 @@ class Core:
         Returns:
             Agent engine object if found, None if no matching agent engine exists.
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
 
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
+
         agent_engine_list = list(
-            agent_engines.list(
-                filter=f'display_name="{display_name}"',
+            self._client.agent_engines.list(
+                config={"filter": f'display_name="{display_name}"'},
             )
         )
         return agent_engine_list[0] if agent_engine_list else None
@@ -107,11 +122,11 @@ class Core:
         Returns:
             list: List of all agent engine objects.
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
         self.logger.debug("Listing all agent engines...")
-        agent_engine_list = list(agent_engines.list())
+        agent_engine_list = list(self._client.agent_engines.list())
         return agent_engine_list
 
     def delete_agent_engine(
@@ -145,7 +160,7 @@ class Core:
             if not agent_engine:
                 raise Exception(f"Agent engine with display name '{name}' not found")
 
-            self.logger.info(f"Found agent engine: {agent_engine.resource_name}")
+            self.logger.info(f"Found agent engine: {agent_engine.api_resource.name}")
 
             # Delete the agent engine
             self.logger.info("Deleting agent engine...")
@@ -172,6 +187,8 @@ class Core:
         """
         # Use cached configuration from initialization
         config = self.config
+        if config is None:
+            raise ValueError("Configuration not loaded")
         self.logger.info(f"Using profile: {self.profile}")
 
         # Apply overrides to config
@@ -179,7 +196,7 @@ class Core:
             config = self._apply_overrides(config, overrides)
 
         # Extract agent engine configuration
-        agent_engine_config = self._build_agent_engine_config(config)
+        agent_instance, config_dict = self._build_agent_engine_config(config)
 
         # Get display_name from config
         config_display_name = config.get("display_name")
@@ -187,7 +204,7 @@ class Core:
             raise ValueError("display_name must be provided in YAML config")
 
         # Call existing create_or_update method
-        self.create_or_update(agent_engine_config, config_display_name, dry_run)
+        self.create_or_update(agent_instance, config_dict, config_display_name, dry_run)
 
     def delete_agent_engine_from_yaml(
         self,
@@ -207,6 +224,8 @@ class Core:
         """
         # Use cached configuration from initialization
         config = self.config
+        if config is None:
+            raise ValueError("Configuration not loaded")
         self.logger.info(f"Using profile: {self.profile}")
 
         # Get display_name from config
@@ -266,6 +285,11 @@ class Core:
                 init_kwargs["staging_bucket"] = f"gs://{self.staging_bucket}"
 
             vertexai.init(**init_kwargs)
+            # Create client for new API
+            self._client = vertexai.Client(
+                project=self.project,
+                location=self.location,
+            )
             self._vertex_ai_initialized = True
 
     def _apply_overrides(self, config: dict, overrides: dict) -> dict:
@@ -319,14 +343,14 @@ class Core:
                 "instance_path must be provided in agent_engine configuration"
             )
 
-    def _build_agent_engine_config(self, config: dict) -> dict:
+    def _build_agent_engine_config(self, config: dict) -> tuple:
         """Build agent engine configuration from YAML config.
 
         Args:
             config (dict): Configuration dictionary loaded from YAML.
 
         Returns:
-            dict: Agent engine configuration ready for create/update.
+            tuple: (agent_instance, config_dict) ready for create/update with new API.
         """
         # Extract agent engine configuration
         agent_config = config.get("agent_engine", {})
@@ -334,26 +358,60 @@ class Core:
         # Get agent instance using the reusable method
         agent_instance = self._get_agent_instance_from_config(agent_config)
 
-        # Build the complete configuration
-        agent_engine_config = {
-            "agent_engine": agent_instance,
-            "description": config.get("description"),
+        # Build the configuration dict according to new API
+        config_dict = {
             "display_name": config.get("display_name"),
-            "env_vars": config.get("env_vars", {}),
+            "description": config.get("description"),
+            "requirements": config.get("requirements", []),
             "extra_packages": config.get("extra_packages", []),
             "gcs_dir_name": config.get("gcs_dir_name"),
-            "requirements": config.get("requirements", []),
+            "env_vars": config.get("env_vars", {}),
         }
 
-        return agent_engine_config
+        # Add staging_bucket if available
+        if self.staging_bucket:
+            config_dict["staging_bucket"] = f"gs://{self.staging_bucket}"
+
+        # Add new optional parameters if provided
+        if "labels" in config:
+            config_dict["labels"] = config["labels"]
+        if "build_options" in config:
+            config_dict["build_options"] = config["build_options"]
+        if "identity_type" in config:
+            config_dict["identity_type"] = config["identity_type"]
+        if "service_account" in config:
+            config_dict["service_account"] = config["service_account"]
+        if "min_instances" in config:
+            config_dict["min_instances"] = config["min_instances"]
+        if "max_instances" in config:
+            config_dict["max_instances"] = config["max_instances"]
+        if "resource_limits" in config:
+            config_dict["resource_limits"] = config["resource_limits"]
+        if "container_concurrency" in config:
+            config_dict["container_concurrency"] = config["container_concurrency"]
+        if "encryption_spec" in config:
+            config_dict["encryption_spec"] = config["encryption_spec"]
+        if "agent_framework" in config:
+            config_dict["agent_framework"] = config["agent_framework"]
+
+        # Private Service Connect configuration for VPC access
+        if "psc_interface_config" in config:
+            config_dict["psc_interface_config"] = config["psc_interface_config"]
+
+        return agent_instance, config_dict
 
     def create_or_update(
-        self, agent_engine_config: dict, display_name: str, dry_run: bool = False
+        self,
+        agent_instance,
+        config_dict: dict,
+        display_name: str,
+        dry_run: bool = False,
     ) -> None:
         """Deploy or update an agent engine based on whether it already exists.
 
         Args:
-            agent_engine_config (dict): Configuration for the agent engine.
+            agent_instance: The agent instance to deploy.
+            config_dict (dict): Configuration dictionary for the agent engine.
             display_name (str): Display name to check for existing agent engine.
             dry_run (bool, optional): If True, performs validation without actually
                 deploying or updating. Defaults to False.
@@ -361,27 +419,33 @@ class Core:
         Returns:
             None
         """
-        from vertexai import agent_engines
-
         self._ensure_vertex_ai_initialized()
+        if self._client is None:
+            raise ValueError("Vertex AI client not initialized")
+        self.logger.info("Agent Instance: " + str(type(agent_instance).__name__))
         self.logger.info(
-            "Agent Engine Config:\n" + pprint.pformat(agent_engine_config, indent=2)
+            "Agent Engine Config:\n" + pprint.pformat(config_dict, indent=2)
         )
         agent_engine = self.get_agent_engine(display_name)
         if agent_engine:
             self.logger.info(
-                f"Found existing agent engine: {agent_engine.resource_name}"
+                f"Found existing agent engine: {agent_engine.api_resource.name}"
             )
             if dry_run:
                 self.logger.info("Dry run mode: not updating the agent engine.")
             else:
-                agent_engines.update(
-                    resource_name=agent_engine.resource_name,
-                    **agent_engine_config,
+                self.logger.info("Updating agent engine...")
+                self._client.agent_engines.update(
+                    name=agent_engine.api_resource.name,
+                    agent=agent_instance,
+                    config=config_dict,
                 )
         else:
             if dry_run:
                 self.logger.info("Dry run mode: not deploying the agent engine.")
             else:
                 self.logger.info("Deploying agent engine...")
-                agent_engines.create(**agent_engine_config)
+                self._client.agent_engines.create(
+                    agent=agent_instance,
+                    config=config_dict,
+                )

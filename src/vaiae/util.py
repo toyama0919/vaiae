@@ -39,7 +39,7 @@ class Util:
         )
 
     @staticmethod
-    def load_yaml_config(file_path: str, profile: str = None) -> Dict[str, Any]:
+    def load_yaml_config(file_path: str, profile: str | None = None) -> Dict[str, Any]:
         """Load configuration from YAML file.
 
         Args:
