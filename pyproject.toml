@@ -22,7 +22,7 @@ keywords = [
 requires-python = ">=3.10"
 dependencies = [
   "tabulate",
-  "google-cloud-aiplatform[adk,agent_engines]",
+  "google-cloud-aiplatform[adk,agent_engines]>=1.138.0",
   "google-adk",
   "click>=7.0",
   "pyyaml"

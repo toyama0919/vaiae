@@ -40,8 +40,6 @@ class Core:
         user_id: str | None = None,
         local: bool = False,
     ):
-        from vertexai.preview import reasoning_engines
-
         self._ensure_vertex_ai_initialized()
 
         if self.config is None:
@@ -51,26 +49,48 @@ class Core:
             raise ValueError("user_id must be provided")
 
         if local:
-            # For local mode, get agent instance from current config
-            agent_config = self.config.get("agent_engine", {})
-            agent_instance = self._get_agent_instance_from_config(agent_config)
-            self.app = reasoning_engines.AdkApp(
-                agent=agent_instance,
-                enable_tracing=True,
-            )
+            self._send_message_local(message, session_id, user_id)
         else:
-            display_name = self.config.get("display_name")
-            if not display_name:
-                raise ValueError("display_name must be provided in configuration")
-            self.app = self.get_agent_engine(
-                display_name=display_name,
-            )
+            self._send_message_remote(message, session_id, user_id)
 
-        # suppress output to stderr
-        sys.stderr = io.StringIO()
+    def _send_message_local(
+        self,
+        message: str,
+        session_id: str | None,
+        user_id: str,
+    ):
+        from vertexai.preview import reasoning_engines
+
+        agent_config = self.config.get("agent_engine", {})  # type: ignore[union-attr]
+        agent_instance = self._get_agent_instance_from_config(agent_config)
+        app = reasoning_engines.AdkApp(
+            agent=agent_instance,
+            enable_tracing=True,
+        )
+        self._stream_query(app, message, session_id, user_id)
+
+    def _send_message_remote(
+        self,
+        message: str,
+        session_id: str | None,
+        user_id: str,
+    ):
+        display_name = self.config.get("display_name")  # type: ignore[union-attr]
+        if not display_name:
+            raise ValueError("display_name must be provided in configuration")
+
+        agent_engine = self.get_agent_engine(display_name=display_name)
+        if agent_engine is None:
+            raise ValueError(f"Agent engine '{display_name}' not found")
+
+        resource_name = agent_engine.api_resource.name
+        app = self._client.agent_engines.get(name=resource_name)
+        self._stream_query(app, message, session_id, user_id)
+
+    def _stream_query(self, app, message: str, session_id: str | None, user_id: str):
         actual_session_id: str
         if session_id is None:
-            session = self.app.create_session(user_id=user_id)
+            session = app.create_session(user_id=user_id)
             if isinstance(session, dict):
                 actual_session_id = str(session.get("id"))
             else:
@@ -78,22 +98,28 @@ class Core:
         else:
             actual_session_id = session_id
 
-        from typing import Any
+        self.logger.debug(
+            f"Sending message: user_id={user_id}, session_id={actual_session_id}"
+        )
 
-        query_params: dict[str, Any] = {
-            "user_id": user_id,
-            "session_id": actual_session_id,
-            "message": message,
-        }
-        self.logger.debug(f"Sending message with params: {query_params}")
-        events = self.app.stream_query(**query_params)
-
-        for event in events:
-            self.logger.debug(event)
-            for part in event.get("content").get("parts", []):
-                text = part.get("text")
-                if text:
-                    print(text)
+        original_stderr = sys.stderr
+        try:
+            sys.stderr = io.StringIO()
+            for event in app.stream_query(
+                user_id=user_id,
+                session_id=actual_session_id,
+                message=message,
+            ):
+                self.logger.debug(event)
+                content = event.get("content")
+                if content is None:
+                    continue
+                for part in content.get("parts", []):
+                    text = part.get("text")
+                    if text:
+                        print(text)
+        finally:
+            sys.stderr = original_stderr
 
     def get_agent_engine(self, display_name: str):
         """Get agent engine filtered by display name.
