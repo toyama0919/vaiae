@@ -1,6 +1,6 @@
 [project]
 name = "vaiae"
-version = "0.2.0"
+version = "0.2.1"
 description = "Vertex AI Agent Engine CLI."
 authors = [{ name="Hiroshi Toyama", email="toyama0919@gmail.com" }]
 readme = "README.md"
